@@ -1,0 +1,180 @@
+1. Saat delete dengan correct Id menampilkan pesan : result.remove is not a function
+solusi: mengganti await result.remove(); dengan await result.deleteOne();
+2. Ketika statusEvent false, Meskipun tidak tampil di landing page tetapi participants masih dapat melakukan checkout order events
+3. Role masih statis
+4. Belum ada fitur invoices yang dikirim ke email
+
+
+postman_link
+https://documenter.getpostman.com/view/2945224/UzQsvSF2
+
+
+contoh paginate+infinite scroll by req.query data
+try {
+    const { limit, skip, search } = req.query;
+
+    let limitData = 25;
+    let skipData = 0;
+
+    if (limit) {
+      limitData = parseInt(limit);
+    }
+
+    if (skip) {
+      skipData = parseInt(skip);
+    }
+
+    let query = {};
+
+    if (search) {
+      query = { $text: { $search: search } };
+    }
+
+    const orders = await Order.find(query).skip(skipData).limit(limitData);
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+
+Di sisi klien, Anda perlu mengatur logika infinite scroll menggunakan JavaScript. Berikut adalah contoh penggunaannya:
+
+const limit = 25;
+let skip = 0;
+let search = '';
+
+function fetchOrders() {
+  const url = `/orders?limit=${limit}&skip=${skip}&search=${search}`;
+
+  fetch(url)
+    .then((response) => response.json())
+    .then((data) => {
+      // Lakukan apa yang Anda inginkan dengan data yang diterima
+      // Misalnya, tampilkan data di halaman menggunakan DOM manipulation
+      // atau tambahkan data ke array yang ada di halaman
+      console.log(data);
+      skip += limit;
+    })
+    .catch((error) => {
+      console.error(error);
+    });
+}
+
+function handleSearch(event) {
+  search = event.target.value;
+  skip = 0; // Reset jumlah data yang dilewati saat pencarian berubah
+  fetchOrders(); // Panggil fungsi untuk mengambil data sesuai dengan pencarian yang baru
+}
+
+// Event listener untuk mendeteksi perubahan pada input pencarian
+const searchInput = document.getElementById('search-input');
+searchInput.addEventListener('input', handleSearch);
+
+// Fungsi yang akan dipanggil saat pengguna mencapai batas bawah halaman
+function handleScroll() {
+  const windowHeight = window.innerHeight;
+  const documentHeight = document.documentElement.scrollHeight;
+  const scrollTop = window.scrollY;
+
+  if (scrollTop + windowHeight >= documentHeight) {
+    fetchOrders(); // Panggil fungsi untuk mengambil data berikutnya
+  }
+}
+
+// Event listener untuk mendeteksi scroll
+window.addEventListener('scroll', handleScroll);
+
+// Panggil fungsi fetchOrders() untuk mengambil data pertama kali saat halaman dimuat
+fetchOrders();
+Dalam contoh di atas, fetchOrders() adalah fungsi yang digunakan untuk mengambil data dari endpoint /orders dengan mengatur jumlah data yang ditampilkan (limit) dan jumlah data yang dilewati (skip). Setiap kali pengguna menggulir halaman ke bawah dan mencapai batas bawah, fungsi ini akan dipanggil lagi untuk mengambil data selanjutnya.
+
+Pastikan untuk menyesuaikan kode di sisi klien dengan tampilan halaman Anda dan memanipulasi data yang diterima sesuai dengan kebutuhan aplikasi Anda.
+
+
+
+Tutorial M.Fikri dengan sequelize
+
+export const getUsers = async(req, res) =>{
+    const page = parseInt(req.query.page) || 0;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search_query || "";
+    const offset = limit * page;
+    const totalRows = await User.count({
+        where:{
+            [Op.or]: [{name:{
+                [Op.like]: '%'+search+'%'
+            }}, {email:{
+                [Op.like]: '%'+search+'%'
+            }}]
+        }
+    });
+    const totalPage = Math.ceil(totalRows / limit);
+    const result = await User.findAll({
+        where:{
+            [Op.or]: [{name:{
+                [Op.like]: '%'+search+'%'
+            }}, {email:{
+                [Op.like]: '%'+search+'%'
+            }}]
+        },
+        offset: offset,
+        limit: limit,
+        order:[
+            ['id', 'DESC']
+        ]
+    });
+    res.json({
+        result: result,
+        page: page,
+        limit: limit,
+        totalRows: totalRows,
+        totalPage: totalPage
+    });
+}
+
+		export const getUsers = async(req, res) =>{
+    const last_id = parseInt(req.query.lastId) || 0;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search_query || "";
+
+    let result = [];
+    if(last_id < 1){
+        const results = await User.findAll({
+            where:{
+                [Op.or]: [{name:{
+                    [Op.like]: '%'+search+'%'
+                }}, {email:{
+                    [Op.like]: '%'+search+'%'
+                }}]
+            },
+            limit: limit,
+            order:[
+                ['id', 'DESC']
+            ]
+        });
+        result = results;
+    }else{
+        const results = await User.findAll({
+            where:{
+                id:{
+                    [Op.lt]: last_id
+                },
+                [Op.or]: [{name:{
+                    [Op.like]: '%'+search+'%'
+                }}, {email:{
+                    [Op.like]: '%'+search+'%'
+                }}]
+            },
+            limit: limit,
+            order:[
+                ['id', 'DESC']
+            ]
+        });
+        result = results;
+    }
+    res.json({
+        result: result,
+        lastId: result.length ? result[result.length -1].id : 0,
+        hasMore: result.length >= limit ? true : false
+    });
+
+}

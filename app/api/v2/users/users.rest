@@ -1,0 +1,21 @@
+GET http://localhost:5000/users/infinite?last_id=64cbe56a0a4064befa446a93&limit=10
+
+###
+GET http://localhost:5000/categories/infinite
+
+###
+GET http://localhost:5000/categories/infinite?search_query=Internet
+
+###
+GET http://localhost:5000/categories/infinite?page=3&size=10&search_query=Food
+###
+GET http://localhost:5000/categories/infinite?last_id=64cebacb21ffb88e9c4eefbe&limit=10
+
+###
+GET http://localhost:5000/users?lastId=0&limit=10
+
+###
+GET http://localhost:5000/users?lastId=99991&limit=10
+
+###
+GET http://localhost:5000/users?search_query=john&lastId=0&limit=10

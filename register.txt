@@ -1,0 +1,176 @@
+Register dengan otp
+
+const express = require('express');
+const app = express();
+const bodyParser = require('body-parser');
+const mailgun = require('mailgun-js')({
+  apiKey: 'YOUR_MAILGUN_API_KEY',
+  domain: 'YOUR_MAILGUN_DOMAIN'
+});
+
+// Middleware
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Simulasi database pengguna
+const users = [];
+
+// Generate OTP
+function generateOTP() {
+  const digits = '0123456789';
+  let otp = '';
+  for (let i = 0; i < 6; i++) {
+    otp += digits[Math.floor(Math.random() * 10)];
+  }
+  return otp;
+}
+
+// Registrasi pengguna
+app.post('/register', (req, res) => {
+  const { email, name } = req.body;
+
+  // Cek apakah email sudah terdaftar
+  const existingUser = users.find(user => user.email === email);
+  if (existingUser) {
+    return res.status(400).json({ error: 'Email is already registered' });
+  }
+
+  // Generate OTP
+  const otp = generateOTP();
+
+  // Simpan pengguna ke database
+  const newUser = {
+    name,
+    email,
+    otp
+  };
+  users.push(newUser);
+
+  // Kirim email verifikasi
+  const data = {
+    from: 'sender@example.com',
+    to: email,
+    subject: 'Email Verification',
+    text: `Hello ${name}, please verify your email using OTP: ${otp}`
+  };
+
+  mailgun.messages().send(data, (error, body) => {
+    if (error) {
+      console.log('Error:', error);
+      res.status(500).json({ error: 'Failed to send verification email' });
+    } else {
+      console.log('Verification email sent successfully');
+      res.json({ message: 'Registration successful. Please check your email for verification' });
+    }
+  });
+});
+
+// Verifikasi email
+app.post('/verify', (req, res) => {
+  const { email, otp } = req.body;
+
+  // Cari pengguna dengan email yang sesuai
+  const user = users.find(user => user.email === email);
+  if (!user) {
+    return res.status(400).json({ error: 'User not found' });
+  }
+
+  // Periksa OTP
+  if (user.otp === otp) {
+    // OTP cocok, verifikasi pengguna
+    user.verified = true;
+    res.json({ message: 'Email verification successful' });
+  } else {
+    res.status(400).json({ error: 'Invalid OTP' });
+  }
+});
+
+app.listen(3000, () => {
+  console.log('Server is running on port 3000');
+});
+
+
+
+Contoh dengan links verification
+// ...
+
+// Registrasi pengguna
+app.post('/register', (req, res) => {
+  const { email, name } = req.body;
+
+  // Cek apakah email sudah terdaftar
+  const existingUser = users.find(user => user.email === email);
+  if (existingUser) {
+    return res.status(400).json({ error: 'Email is already registered' });
+  }
+
+  // Generate token
+  const token = generateToken(); // Ganti dengan metode yang sesuai untuk membuat token unik
+
+  // Simpan pengguna ke database dengan token
+  const newUser = {
+    name,
+    email,
+    token,
+    verified: false
+  };
+  users.push(newUser);
+
+  // Membuat tautan verifikasi
+  const verificationLink = `http://yourwebsite.com/verify?token=${token}`;
+
+  // Kirim email verifikasi dengan tautan
+  const data = {
+    from: 'sender@example.com',
+    to: email,
+    subject: 'Email Verification',
+    text: `Hello ${name}, please verify your email by clicking the link below:\n${verificationLink}`
+  };
+
+  // ...
+});
+
+// Verifikasi email
+app.get('/verify', (req, res) => {
+  const { token } = req.query;
+
+  // Cari pengguna dengan token yang sesuai
+  const user = users.find(user => user.token === token);
+  if (!user) {
+    return res.status(400).json({ error: 'User not found or invalid token' });
+  }
+
+  // Verifikasi pengguna
+  user.verified = true;
+  res.json({ message: 'Email verification successful' });
+});
+
+// ...
+
+
+
+
+Atau dengan keduanya
+
+// Verifikasi email
+app.get('/verify', (req, res) => {
+  const { token, otp } = req.query;
+
+  // Cari pengguna dengan token yang sesuai
+  const user = users.find(user => user.token === token);
+  if (!user) {
+    return res.status(400).json({ error: 'User not found or invalid token' });
+  }
+
+  // Periksa jika pengguna memasukkan OTP yang benar
+  if (otp && user.otp === otp) {
+    user.verified = true;
+    return res.json({ message: 'Email verification successful' });
+  }
+
+  // Jika tidak ada OTP atau OTP tidak cocok, arahkan ke halaman verifikasi
+  res.render('verification', { token });
+});
+
+
+
