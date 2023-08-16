@@ -1,6 +1,6 @@
-const Categories = require('../../api/v1/categories/model');
+const Categories = require('../../api/v2/categories/model');
 const { NotFoundError, BadRequestError } = require('../../errors');
-const { infiniteScrollData } = require('../../utils/paginationUtils'); // Sesuaikan dengan lokasi utilitas Anda
+const { paginateData, infiniteScrollData } = require('../../utils/paginationUtils'); // Sesuaikan dengan lokasi utilitas Anda
 
 // Cara 1
 // const getAllCategories = async (req) => {
@@ -62,10 +62,16 @@ const { infiniteScrollData } = require('../../utils/paginationUtils'); // Sesuai
 
 
 // Cara 3
-const getAllCategories = async (req, search, page, size) => {
-	const result = await infiniteScrollData(Categories, 'name', search, page, size);
+const getAllCategories = async (req, queryFields, search, page, size, filter) => {
+	const result = await paginateData(Categories, queryFields, search, page, size, filter);
 	return result;
 };
+
+const getAllCategories2 = async (req, queryFields, search, page, size, filter) => {
+	const result = await infiniteScrollData(Categories, queryFields, search, page, size, filter);
+	return result;
+};
+
 const createCategories = async (req) => {
 	const { name } = req.body;
 
@@ -152,6 +158,7 @@ const checkingCategories = async (id) => {
 
 module.exports = {
 	getAllCategories,
+	getAllCategories2,
 	createCategories,
 	getOneCategories,
 	updateCategories,

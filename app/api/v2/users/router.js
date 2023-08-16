@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express();
-const { create, index, find, update, destroy, changeStatus } = require('./controller');
+const { create, index, indexInfinite, find, update, destroy, changeStatus } = require('./controller');
 
 const {
 	authenticateUser,
@@ -15,12 +15,12 @@ const {
 // router.put('/users/:id/status', authenticateUser, authorizeRoles('developer'), changeStatus);
 
 router.get('/users', index);
-// router.get('/companies', index);
-// router.post('/companies', create);
-// router.get('/companies/:id', find);
-// router.put('/companies/:id', update);
-// router.delete('/companies/:id', destroy);
-// router.put('/companies/:id/status', changeStatus);
+router.get('/users/infinite', indexInfinite);
+router.post('/users', create);
+router.get('/users/:id', find);
+router.put('/users/:id', update);
+router.delete('/users/:id', destroy);
+router.put('/users/:id/status', changeStatus);
 
 
 module.exports = router;

@@ -1,6 +1,6 @@
 const {StatusCodes} = require('http-status-codes');
 
-const {createImages} = require('../../../services/mongoose/images');
+const {createImages} = require('../../../services/mongoose-v2/images');
 
 const create = async (req, res, next) => {
 	try {

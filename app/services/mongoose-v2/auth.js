@@ -1,59 +1,16 @@
-const Users = require("../../api/v1/users/model");
-const Companies = require("../../api/v1/companies/model");
-const Contact = require('../../api/v1/contacts/model');
-const UserRefreshToken = require('../../api/v1/userRefreshToken/model');
+const Users = require("../../api/v2/users/model");
+const Companies = require("../../api/v2/companies/model");
+const Contact = require('../../api/v2/contacts/model');
+const UserRefreshToken = require('../../api/v2/userRefreshToken/model');
 const { NotFoundError, BadRequestError, UnauthorizedError } = require("../../errors");
-const { generateToken, createJWT, createRefreshJWT, attachCookiesToResponse,isTokenValidRefreshToken } = require("../../utils/jwt");
+const { generateToken, createJWT, createRefreshJWT, attachCookiesToResponse, isTokenValidRefreshToken } = require("../../utils/jwt");
 const { createTokenUser, } = require("../../utils/createTokenUser");
 const { otpMail } = require('../mail');
 const { createUserRefreshToken } = require("./refreshToken");
-const { createImages } = require('./images');
-
-// const signupUser = async (req, res) => {
-// 	const { company, email, password, confirmPassword, name } = req.body;
-// 	if (!name || !company || !email || !password || !confirmPassword) {
-// 		throw new BadRequestError("Please provide all required fields");
-// 	}
-// 	if (password !== confirmPassword) throw new BadRequestError("Password and confirm password do not match");
-
-// 	const existingUser = await Users.findOne({ email });
-// 	if (existingUser) {
-// 		throw new BadRequestError("User with this email already exists");
-// 	}
-
-// 	try {
-// 		// first registered Users is an owner
-// 		const isFirstAccount = (await Users.countDocuments({})) === 0;
-// 		const role = isFirstAccount ? 'owner' : 'admin';
-// 		const companies = await Companies.create({ company });
-// 		const user = await Users.create({
-// 			name, email, password, role,
-// 			company: companies._id,
-// 			// otp: Math.floor(Math.random() * 9999)
-// 		});
-
-// 		// let checkMail = await Users.findOne({
-// 		// 	email,
-// 		// 	status: "tidak aktif",
-// 		// });
-// 		// await otpMail(email, checkMail);
-
-// 		// Generate token
-// 		// if (user) {
-// 		// 	generateToken(res, user._id);
-// 		// }
-
-// 		return {
-// 			msg: 'Please Activated Account with OTP Code from your email',
-// 			user,
-// 		}
-// 	} catch (err) {
-// 		console.log(err)
-// 	}
-// };
+const { checkingImage, createImages } = require('./images');
 
 const signupUser = async (req, res) => {
-	const { companyName, email, password, confirmPassword, name, phone, } = req.body;
+	const { avatar, companyName, email, password, confirmPassword, name, phone, } = req.body;
 	if (!name || !companyName || !email || !password || !confirmPassword) {
 		throw new BadRequestError("Please provide all required fields");
 	}
@@ -65,24 +22,31 @@ const signupUser = async (req, res) => {
 	try {
 		// first registered Users is an owner
 		const isFirstAccount = (await Users.countDocuments({})) === 0;
-		const role = isFirstAccount ? 'owner' : 'admin';
-		const status = isFirstAccount ? 'active' : 'pending';
-		const avatar = await createImages(req);
-		const companies = await Companies.create({ companyName });
+		const role = isFirstAccount ? 'developer' : 'owner';
+		const status = isFirstAccount ? 'active' : 'inactive';
+		// const avatar = await createImages(avatar);
+		await checkingImage(avatar);
+		// const companies = await Companies.create({ companyName, password, owner: user._id });
 		const contact = await Contact.create({ name, email, phone });
 		const user = await Users.create({
 			name, email, password, role, status,
-			avatar: avatar._id,
-			company: companies._id,
+			// avatar: avatar._id,
+			avatar,
+			// company: companies._id,
 			contact: contact._id,
-			// otp: Math.floor(Math.random() * 9999)
+			otp: Math.floor(Math.random() * 999999)
 		});
+		delete user._doc.password;
+		delete user._doc.otp;
+
+		const companies = await Companies.create({ companyName, email, password, owner: user._id });
+
 
 		let checkMail = await Users.findOne({
 			email,
-			status: "tidak aktif",
+			status: "inactive",
 		});
-		await otpMail(email, checkMail);
+		// await otpMail(email, checkMail);
 
 		// Generate token
 		// if (user) {
@@ -90,14 +54,14 @@ const signupUser = async (req, res) => {
 		// }
 		const result = createTokenUser(user);
 		attachCookiesToResponse({ res, user: result });
-		return;
-		// return {
-		// 	msg: 'Please Activated Account with OTP Code from your email',
-		// 	user,
-		// 	result
-		// }
+		return {
+			msg: 'Register Oke. Please Activated Account with OTP Code from your email!',
+			data: user,
+			result
+		}
 	} catch (err) {
 		console.log(err)
+		throw err
 	}
 };
 
@@ -131,8 +95,7 @@ const signinUser = async (req, res) => {
 			sameSite: 'strict', // Prevent CSRF attacks
 			signed: true,
 		});
-		// return;
-		req.session.userId = accessToken
+		// req.session.userId = accessToken
 		return {
 			accessToken,
 			refreshToken,
@@ -141,7 +104,6 @@ const signinUser = async (req, res) => {
 			role: user.role,
 			avatar: user.avatar,
 		}
-		// return result
 	} catch (err) {
 		throw err
 	}
@@ -160,7 +122,7 @@ const activateUser = async (req) => {
 	const users = await Users.findByIdAndUpdate(
 		check._id,
 		{
-			status: "aktif",
+			status: "active",
 		},
 		{ new: true }
 	);
@@ -188,7 +150,7 @@ const getRefreshToken = async (req) => {
 
 	const userCheck = await Users.findOne({ email: payload.email });
 
-	const token = createJWT({ payload: createTokenUser(userCheck) });
+	const accessToken = createJWT({ payload: createTokenUser(userCheck) });
 
 	const newrefreshToken = createRefreshJWT({ payload: createTokenUser(result) });
 	await createUserRefreshToken({
@@ -197,16 +159,58 @@ const getRefreshToken = async (req) => {
 	});
 
 	// return result;
-	return {token, refreshtoken: newrefreshToken};
+	return { accessToken, refreshtoken: newrefreshToken };
 };
 
 const logoutUser = async (req, res) => {
 	res.clearCookie('refreshToken');
-	req.session.destroy((err) => {
-		if (err) console.error("Deleted Sessions Failed:", err);
+	// req.session.destroy((err) => {
+	// 	if (err) console.error("Deleted Sessions Failed:", err);
 
-		console.log({ msg: 'Logout Success!' });
+	// 	console.log({ msg: 'Logout Success!' });
+	// });
+};
+
+const requestPasswordReset = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    throw new BadRequestError("Please provide an email address");
+  }
+
+  const user = await Users.findOne({ email });
+  if (!user) {
+    throw new NotFoundError("User with this email not found");
+  }
+
+  // const resetToken = generateResetToken(user._id);
+  const resetToken = createRefreshJWT({ payload: createTokenUser(user) });
+  await createUserRefreshToken({
+		resetToken,
+		user: result._id,
 	});
+
+  sendPasswordResetEmail(user.email, resetToken);
+
+  return { msg: "Password reset link sent to your email" };
+};
+
+const resetPassword = async (req, res) => {
+  const { token, newPassword, confirmPassword } = req.body;
+
+  if (!token || !newPassword || !confirmPassword) {
+    throw new BadRequestError("Please provide token, new password, and confirm password");
+  }
+
+  const userId = await validateResetToken(token);
+  if (newPassword !== confirmPassword) {
+    throw new BadRequestError("New password and confirm password do not match");
+  }
+  await Users.findByIdAndUpdate(userId, { password });
+
+  await clearResetToken(userId, token);
+
+  return { msg: "Password has been reset successfully" };
 };
 
 module.exports = {
@@ -214,5 +218,7 @@ module.exports = {
 	signinUser,
 	activateUser,
 	getRefreshToken,
-	logoutUser
+	logoutUser,
+	requestPasswordReset,
+	resetPassword,
 };

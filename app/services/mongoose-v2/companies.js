@@ -1,31 +1,40 @@
-const Companies = require('../../api/v1/companies/model');
-const Contact = require('../../api/v1/contacts/model');
-const Address = require('../../api/v1/address/model');
-
-// import custom error not found dan bad request
+const Companies = require('../../api/v2/companies/model');
+const Contact = require('../../api/v2/contact/model');
+const Address = require('../../api/v2/address/model');
 const { NotFoundError, BadRequestError } = require('../../errors');
+const { paginateData, infiniteScrollData } = require('../../utils/paginationUtils');
 
 const getAllCompanies = async (req) => {
-	const result = await Companies.find({ organizer: req.user.organizer });
+	const result = await Companies.find({ owner: req.user.owner });
 
 	return result;
 };
 
 const createCompany = async (req) => {
-	const { name } = req.body;
+	const { companyName, email, password, mottoCompany, about, logo, birthday, terms, policy, status, speedtest, watermark, phone, address } = req.body;
 
-	// cari categories dengan field name
 	const check = await Companies.findOne({
-		name,
-		organizer: req.user.organizer,
+		companyName,
+		owner: req.user.company,
 	});
-
-	// apa bila check true / data categories sudah ada maka kita tampilkan error bad request dengan message kategori nama duplikat
-	if (check) throw new BadRequestError('kategori nama duplikat');
+	if (check) throw new BadRequestError(`Company with this name: ${companyName} already exists`);
 
 	const result = await Companies.create({
-		name,
-		organizer: req.user.organizer,
+		companyName,
+		email,
+		password,
+		mottoCompany,
+		about,
+		logo,
+		birthday,
+		terms,
+		policy,
+		status,
+		speedtest,
+		watermark,
+		phone,
+		address,
+		owner: req.user._id,
 	});
 
 	return result;
@@ -36,7 +45,7 @@ const getOneCompany = async (req) => {
 
 	const result = await Companies.findOne({
 		_id: id,
-		organizer: req.user.organizer,
+		company: req.user.company,
 	});
 
 	if (!result) throw new NotFoundError(`Tidak ada Kategori dengan id :  ${id}`);
@@ -60,6 +69,8 @@ const updateCompanyProfile = async (req) => {
 
 		const updateFields = {
 			companyName,
+			email,
+			password,
 			mottoCompany,
 			about,
 			logo,

@@ -1,9 +1,9 @@
-const Contact = require('../../api/v1/contacts/model');
-const Address = require('../../api/v1/address/model');
+const Contact = require('../../api/v2/contacts/model');
+const Address = require('../../api/v2/address/model');
 const { NotFoundError, BadRequestError } = require('../../errors');
 
 const getAllContacts = async () => {
-  const result = await Contact.find({});
+  const result = await Contact.find();
 
   return result;
 };
@@ -68,27 +68,24 @@ const updateContact = async (id, contactData) => {
     contact.phone = phone;
 
     // Temukan alamat terkait berdasarkan ID
-    const addressObj = await Address.findById(contact.address);
+    const address = await Address.findById(contact.address);
 
-    if (!addressObj) {
+    if (!address) {
       throw new NotFoundError(`Tidak ada alamat dengan ID: ${contact.address}`);
     }
 
     // Perbarui bidang alamat
-    addressObj.address = address;
-    addressObj.desa = desa;
-    addressObj.kecamatan = kecamatan;
-    addressObj.city = city;
-    addressObj.zipcode = zipcode;
-    addressObj.province = province;
-    addressObj.country = country;
-    addressObj.geo.latitude = latitude;
-    addressObj.geo.longitude = longitude;
+    address.address = address;
+    address.desa = desa;
+    address.kecamatan = kecamatan;
+    address.city = city;
+    address.zipcode = zipcode;
+    address.province = province;
+    address.country = country;
+    address.geo.latitude = latitude;
+    address.geo.longitude = longitude;
 
-    // Simpan perubahan pada alamat
-    await addressObj.save();
-
-    // Simpan perubahan pada kontak
+    await address.save();
     const savedContact = await contact.save();
 
     return savedContact;

@@ -1,5 +1,5 @@
-const Coverage = require('../../api/v1/coverage/model');
-const Address = require('../../api/v1/address/model');
+const Coverage = require('../../api/v2/coverage/model');
+const Address = require('../../api/v2/address/model');
 const { NotFoundError, BadRequestError } = require('../../errors');
 
 const getAllCoverages = async () => {

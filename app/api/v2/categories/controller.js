@@ -7,75 +7,20 @@ const {
 	deleteCategories,
 } = require('../../../services/mongoose-v2/categories');
 const { StatusCodes } = require('http-status-codes');
-const { infiniteScrollData } = require('../../../utils/paginationUtils'); // Sesuaikan dengan lokasi utilitas Anda
-const Categories = require('../../v1/categories/model');
-
-// Fix Infinite
-// const indexInfinite = async (req, res, next) => {
-// 	try {
-// 		let page = parseInt(req.query.page) || 1;
-// 		const size = parseInt(req.query.size) || 10;
-// 		const search = req.query.search_query || "";
-
-// 		if (search) {
-// 			// Jika terdapat parameter pencarian, atur halaman kembali ke 1
-// 			page = 1;
-// 		}
-
-// 		const skip = (page - 1) * size;
-
-// 		const query = {};
-// 		if (search) {
-// 			query.name = { $regex: search, $options: "i" };
-// 		}
-
-// 		const totalRows = await Categories.countDocuments(query);
-// 		const totalPage = Math.ceil(totalRows / size);
-// 		const result = await Categories.find(query).skip(skip).limit(size);
-// 		res.status(StatusCodes.OK).json({
-// 			data: result,
-// 			totalRows,
-// 			page,
-// 			size,
-// 			totalPage,
-// 			search
-// 		});
-// 	} catch (err) {
-// 		next(err);
-// 	}
-// };
 
 const index = async (req, res, next) => {
 	try {
-		const result = await getAllCategories(req);
-		res.status(StatusCodes.OK).json({
-			data: result,
-		});
+		let page = parseInt(req.query.page) || 1;
+		const size = parseInt(req.query.size) || 10;
+		const search = req.query.search_query || "";
+		const queryFields = ['name'];
+
+		const result = await getAllCategories(req, queryFields, search, page, size);
+		res.status(StatusCodes.OK).json(result);
 	} catch (err) {
 		next(err);
 	}
 };
-
-// const indexInfinite = async (req, res, next) => {
-// 	try {
-// 		const {
-// 			data,
-// 			totalRows,
-// 			page,
-// 			size,
-// 			search
-// 		} = await getAllCategories(req);
-// 		res.status(StatusCodes.OK).json({
-// 			data,
-// 			totalRows,
-// 			page,
-// 			size,
-// 			search
-// 		});
-// 	} catch (err) {
-// 		next(err);
-// 	}
-// };
 
 const indexInfinite = async (req, res, next) => {
 	try {
@@ -84,7 +29,6 @@ const indexInfinite = async (req, res, next) => {
 		const search = req.query.search_query || "";
 		const queryFields = ['name'];
 
-		// Filter by company
 		const filter = { company: req.user.company };
 
 		const result = await getAllCategories(req, queryFields, search, page, size, filter);

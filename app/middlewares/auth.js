@@ -1,8 +1,7 @@
 const { UnauthenticatedError, UnauthorizedError } = require('../errors');
 const { isTokenValid } = require('../utils/jwt');
 const jwt = require('jsonwebtoken');
-const asyncHandler = require('express-async-handler');
-const Users = require('../api/v1/users/model');
+const Users = require('../api/v2/users/model');
 
 // with cookie
 // const authenticateUser = async (req, res, next) => {

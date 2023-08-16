@@ -22,22 +22,24 @@ const companiesSchema = new mongoose.Schema(
 			type: String,
 		},
 		logo: {
-			type: String,
+			// type: String,
+			type: mongoose.Types.ObjectId,
+			ref: 'Image',
 		},
 		birthday: {
 			type: String,
 		},
-		// contact: {
-		// 	type: mongoose.Types.ObjectId,
-		// 	ref: 'Contact',
+		contact: {
+			type: mongoose.Types.ObjectId,
+			ref: 'Contact',
+		},
+		// phone: {
+		// 	type: String,
 		// },
-		phone: {
-			type: String,
-		},
-		address: {
-			type: mongoose.Schema.Types.ObjectId,
-			ref: 'Address',
-		},
+		// address: {
+		// 	type: mongoose.Schema.Types.ObjectId,
+		// 	ref: 'Address',
+		// },
 		terms: {
 			type: String,
 		},
@@ -46,14 +48,19 @@ const companiesSchema = new mongoose.Schema(
 		},
 		status: {
 			type: String,
-			enum: ['active', 'not active'],
-			default: 'not active',
+			enum: ['active', 'inactive'],
+			default: 'inactive',
 		},
 		speedtest: {
 			type: String,
 		},
 		watermark: {
 			type: String,
+		},
+		owner:{
+			type: mongoose.Types.ObjectId,
+			ref: 'User',
+			required: true
 		},
 	},
 	{ timestamps: true }

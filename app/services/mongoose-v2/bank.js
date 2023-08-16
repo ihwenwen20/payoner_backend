@@ -1,4 +1,4 @@
-const Bank = require('../../api/v1/bank/model');
+const Bank = require('../../api/v2/bank/model');
 const { NotFoundError, BadRequestError } = require('../../errors');
 
 const getAllBanks = async (req) => {

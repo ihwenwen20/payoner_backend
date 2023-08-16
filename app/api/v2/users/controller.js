@@ -1,5 +1,6 @@
 const {
 	getAllUsers,
+	getAllUsers2,
 	createUser,
 	getDetailUser,
 	updateUser,
@@ -7,19 +8,32 @@ const {
 	changeStatusUser,
 } = require('../../../services/mongoose-v2/users');
 const { StatusCodes } = require('http-status-codes');
-const { infiniteScrollData } = require('../../../utils/paginationUtils'); // Sesuaikan dengan lokasi utilitas Anda
-const Users = require('../../v1/users/model'); // Sesuaikan dengan model yang Anda gunakan
 
 const index = async (req, res, next) => {
 	try {
-			const page = parseInt(req.query.page) || 0;
-			const limit = parseInt(req.query.limit) || 10;
-			const search = req.query.search_query || "";
+		let page = parseInt(req.query.page) || 1;
+		const size = parseInt(req.query.size) || 10;
+		const search = req.query.search_query || "";
+		const queryFields = ['username', 'name', 'email'];
 
-			const usersData = await getAllUsers(req, page, limit, search);
-			res.status(StatusCodes.OK).json(usersData);
+		const result = await getAllUsers(req, queryFields, search, page, size);
+		res.status(StatusCodes.OK).json(result);
 	} catch (err) {
-			next(err);
+		next(err);
+	}
+};
+
+const indexInfinite = async (req, res, next) => {
+	try {
+		let page = parseInt(req.query.page) || 1;
+		const size = parseInt(req.query.size) || 10;
+		const search = req.query.search_query || "";
+		const queryFields = ['username', 'name', 'email'];
+
+		const result = await getAllUsers2(req, queryFields, search, page, size);
+		res.status(StatusCodes.OK).json(result);
+	} catch (err) {
+		next(err);
 	}
 };
 
@@ -85,6 +99,7 @@ const changeStatus = async (req, res, next) => {
 
 module.exports = {
 	index,
+	indexInfinite,
 	create,
 	find,
 	update,

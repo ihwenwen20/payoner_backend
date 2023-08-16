@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema(
 		username: {
 			type: String,
 			unique: [true, "UserName Already Exist"],
-			minlength: 3,
+			minlength: 2,
 		},
 		name: {
 			type: String,
@@ -56,11 +56,11 @@ const userSchema = new mongoose.Schema(
 		billing: {
 			type: String,
 		},
-		company: {
-			type: mongoose.Types.ObjectId,
-			ref: 'Company',
-			required: true,
-		},
+		// company: {
+		// 	type: mongoose.Types.ObjectId,
+		// 	ref: 'Company',
+		// 	// required: true,
+		// },
 		otp: {
 			type: String,
 		},

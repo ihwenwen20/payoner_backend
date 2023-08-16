@@ -5,7 +5,7 @@ const {
 	// createUsers,
 	// getAllUsers,
 	updateCompanyProfile,
-} = require('../../../services/mongoose/companies');
+} = require('../../../services/mongoose-v2/companies');
 
 // const createCMSCompany = async (req, res, next) => {
 // 	try {

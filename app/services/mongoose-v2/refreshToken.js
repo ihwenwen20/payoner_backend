@@ -1,4 +1,4 @@
-const UserRefreshToken = require('../../api/v1/userRefreshToken/model');
+const UserRefreshToken = require('../../api/v2/userRefreshToken/model');
 const {
 	isTokenValidRefreshToken,
 	createJWT,
@@ -7,7 +7,7 @@ const {
 const {
 	createTokenUser,
 } = require('../../utils/createTokenUser');
-const Users = require('../../api/v1/users/model');
+const Users = require('../../api/v2/users/model');
 const {NotFoundError} = require('../../errors');
 
 const createUserRefreshToken = async (payload) => {
@@ -22,7 +22,7 @@ const getUserRefreshToken = async (req) => {
 		refreshToken,
 	});
 
-	if (!result) throw new NotFoundError('refreshToken tidak valid');
+	if (!result) throw new NotFoundError('refreshToken invalid');
 
 	const payload = isTokenValidRefreshToken({token: result.refreshToken});
 
