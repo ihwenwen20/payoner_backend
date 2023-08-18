@@ -1,4 +1,6 @@
-const {StatusCodes} = require('http-status-codes');
+const { StatusCodes } = require('http-status-codes');
+const DuplicateError = require('../errors/duplicateError');
+
 const errorHandlerMiddleware = (err, req, res, next) => {
 	console.log('err');
 	console.log(err.message);
@@ -12,14 +14,14 @@ const errorHandlerMiddleware = (err, req, res, next) => {
 	// error validation dari mongoose
 	// if ini untuk error yang masuk ke catch
 	if (err.name === 'ValidationError') {
-		customError.data = Object.values(err.errors)
+		customError.msg = Object.values(err.errors)
 			.map((item) => item.message)
 			.join(', ');
 		customError.statusCode = 400;
 	}
 
 	if (err.code && err.code === 11000) {
-		customError.data = `Duplicate value entered for ${Object.keys(
+		customError.msg = `Duplicated value entered for ${Object.keys(
 			err.keyValue
 		)} field, please choose another value`;
 		customError.statusCode = 400;
@@ -30,7 +32,12 @@ const errorHandlerMiddleware = (err, req, res, next) => {
 		customError.statusCode = 404;
 	}
 
-	return res.status(customError.statusCode).json({data: customError});
+	if (err instanceof DuplicateError) {
+		customError.msg = err.message;
+		customError.statusCode = err.statusCode;
+	}
+
+	return res.status(customError.statusCode).json(customError);
 };
 
 module.exports = errorHandlerMiddleware;

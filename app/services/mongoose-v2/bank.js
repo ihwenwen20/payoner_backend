@@ -1,5 +1,5 @@
 const Bank = require('../../api/v2/bank/model');
-const { NotFoundError, BadRequestError } = require('../../errors');
+const { NotFoundError, BadRequestError, DuplicateError } = require('../../errors');
 
 const getAllBanks = async (req) => {
 	const result = await Bank.find({});
@@ -14,9 +14,7 @@ const createBank = async (req) => {
 	}
 
 	const check = await Bank.findOne({ ownerName });
-	if (check) {
-		throw new BadRequestError("Bank already exists");
-	}
+	if (check) throw new DuplicateError();
 
 	try {
 		const result = await Bank.create({
@@ -35,7 +33,7 @@ const getOneBank = async (req) => {
 		_id: id,
 	});
 
-	if (!result) throw new NotFoundError(`No value Bank with id :  ${id}`);
+	if (!result) throw new NotFoundError(id);
 
 	return result;
 };
@@ -76,7 +74,7 @@ const deleteBank = async (req) => {
 		_id: id,
 	});
 
-	if (!result) throw new NotFoundError(`No value Bank with id :  ${id}`);
+	if (!result) throw new NotFoundError(id);
 
 	await result.deleteOne();
 

@@ -24,8 +24,13 @@ const app = express();
 // const companiesRouter = require('./app/api/v2/companies/router');
 const authCMSRouter = require('./app/api/v2/auth/router');
 const categoriesRouter = require('./app/api/v2/categories/router');
+const categoriesSubRouter = require('./app/api/v2/categoriesSub/router');
 const usersRouter = require('./app/api/v2/users/router');
 const imagesRouter = require('./app/api/v2/images/router');
+const productRouter = require('./app/api/v2/products/router');
+const reviewRouter = require('./app/api/v2/reviews/router');
+const orderRouter = require('./app/api/v2/orders/router');
+const customerRouter = require('./app/api/v2/customers/router');
 
 // middleware
 const notFoundMiddleware = require('./app/middlewares/not-found');
@@ -46,7 +51,7 @@ app.use(logger('dev'));
 app.use(cookieParser(process.env.JWT_SECRET));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // /* GET home page. */
 // app.get('/', (req, res) => {
@@ -80,7 +85,12 @@ app.use(`${v1}`, authCMSRouter);
 app.use(usersRouter);
 // app.use(companiesRouter);
 app.use(categoriesRouter);
+app.use(categoriesSubRouter);
 app.use(imagesRouter);
+app.use(productRouter);
+app.use(reviewRouter);
+app.use(orderRouter);
+app.use(customerRouter);
 // app.use(banksRouter);
 // app.use(`${v1}`, userRefreshTokenRouter);
 

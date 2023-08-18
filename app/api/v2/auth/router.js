@@ -5,12 +5,19 @@ const {
 	login,
 	showMe,
 	activeUser,
-	logout } = require('./controller');
+	logout,
+	forgotPassword,
+	resetP,
+	changeP,
+ } = require('./controller');
 
 router.post('/signup', register);
 router.post('/signin', login);
 router.get('/me/:refreshToken/:email', showMe);
 router.post('/logout', logout);
 router.put('/activated', activeUser);
+router.post('/forgotPassword', forgotPassword);
+router.post('/resetPassword/:refreshToken/:email', resetP);
+// router.post('/changePassword/:refreshToken/:email', changeP);
 
 module.exports = router;

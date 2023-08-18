@@ -1,4 +1,5 @@
-const { signinUser, signupUser, logoutUser, activateUser, getRefreshToken } = require('../../../services/mongoose-v2/auth');
+const { signinUser, signupUser, logoutUser, activateUser, getRefreshToken,
+	requestPasswordReset, resetPassword } = require('../../../services/mongoose-v2/auth');
 const { StatusCodes } = require('http-status-codes');
 
 const register = async (req, res, next) => {
@@ -71,5 +72,28 @@ const logout = async (req, res, next) => {
 		next(err);
 	}
 };
+const forgotPassword = async (req, res, next) => {
+	try {
+		const result = await requestPasswordReset(req);
 
-module.exports = { login, register, showMe, activeUser, logout };
+		res.status(StatusCodes.OK).json({
+			data: result,
+		});
+	} catch (err) {
+		next(err);
+	}
+};
+
+const resetP = async (req, res, next) => {
+	try {
+		const { msg } = await resetPassword(req);
+
+		res.status(StatusCodes.OK).json({
+			msg,
+		});
+	} catch (err) {
+		next(err);
+	}
+};
+
+module.exports = { login, register, showMe, activeUser, logout, forgotPassword, resetP };

@@ -3,7 +3,16 @@ const Companies = require("../../api/v2/companies/model");
 const Contact = require('../../api/v2/contacts/model');
 const UserRefreshToken = require('../../api/v2/userRefreshToken/model');
 const { NotFoundError, BadRequestError, UnauthorizedError } = require("../../errors");
-const { generateToken, createJWT, createRefreshJWT, attachCookiesToResponse, isTokenValidRefreshToken } = require("../../utils/jwt");
+const {
+	generateToken,
+	createJWT,
+	createRefreshJWT,
+	attachCookiesToResponse,
+	isTokenValid,
+	isTokenValidRefreshToken,
+	validateResetToken,
+	clearResetToken
+} = require("../../utils/jwt");
 const { createTokenUser, } = require("../../utils/createTokenUser");
 const { otpMail } = require('../mail');
 const { createUserRefreshToken } = require("./refreshToken");
@@ -172,46 +181,135 @@ const logoutUser = async (req, res) => {
 };
 
 const requestPasswordReset = async (req, res) => {
-  const { email } = req.body;
+	const { email } = req.body;
 
-  if (!email) {
-    throw new BadRequestError("Please provide an email address");
-  }
+	if (!email) {
+		throw new BadRequestError("Please provide an email address");
+	}
 
-  const user = await Users.findOne({ email });
-  if (!user) {
-    throw new NotFoundError("User with this email not found");
-  }
+	const user = await Users.findOne({ email });
+	if (!user) {
+		throw new NotFoundError("User with this email not found");
+	}
 
-  // const resetToken = generateResetToken(user._id);
-  const resetToken = createRefreshJWT({ payload: createTokenUser(user) });
-  await createUserRefreshToken({
-		resetToken,
-		user: result._id,
+	// const resetToken = generateResetToken(user._id);
+	const resetToken = createRefreshJWT({ payload: createTokenUser(user) });
+	await createUserRefreshToken({
+		refreshToken: resetToken,
+		user: user._id,
 	});
 
-  sendPasswordResetEmail(user.email, resetToken);
+	// sendPasswordResetEmail(user.email, resetToken);
 
-  return { msg: "Password reset link sent to your email" };
+	return {
+		msg: "Password reset link sent to your email",
+		email: user.email,
+		resetToken
+	};
 };
 
 const resetPassword = async (req, res) => {
-  const { token, newPassword, confirmPassword } = req.body;
+	const { refreshToken } = req.params;
+	// console.log(refreshToken)
+	const { newPassword, confirmPassword } = req.body;
+	if (!newPassword || !confirmPassword) {
+		throw new BadRequestError("Please provide all fields");
+	}
+	if (newPassword !== confirmPassword) throw new BadRequestError("Password and confirm password do not match");
 
-  if (!token || !newPassword || !confirmPassword) {
-    throw new BadRequestError("Please provide token, new password, and confirm password");
-  }
+	const payload = isTokenValidRefreshToken({ token: refreshToken });
+	// console.log('payload', payload)
+	const resetTokenFromDB = await UserRefreshToken.findOne({
+		user: payload.userId, refreshToken
+	});
+	// console.log(resetTokenFromDB)
+	if (!resetTokenFromDB) throw new Error("Reset Password Token not found");
 
-  const userId = await validateResetToken(token);
-  if (newPassword !== confirmPassword) {
-    throw new BadRequestError("New password and confirm password do not match");
-  }
-  await Users.findByIdAndUpdate(userId, { password });
+	const userCheck = await Users.findOne({ email: payload.email });
+	// console.log('payload', userCheck)
+	userCheck.password = newPassword;
+	await userCheck.save();
 
-  await clearResetToken(userId, token);
-
-  return { msg: "Password has been reset successfully" };
+	const clearResetToken = await UserRefreshToken.findOneAndDelete({ user: userCheck._id, refreshToken });
+	// console.log(clearResetToken)
+	return { msg: "Password has been reset successfully" };
 };
+
+const changePassword = async (req, res) => {
+	// const { refreshToken } = req.params;
+	const { oldPassword, newPassword, confirmPassword } = req.body;
+	if (!oldPassword || !newPassword || !confirmPassword) {
+		throw new BadRequestError("Please provide all fields");
+	}
+	if (newPassword !== confirmPassword) throw new BadRequestError("Password and confirm password do not match");
+
+	const resetTokenFromDB = await UserRefreshToken.findOne().populate({
+		path: 'user',
+		select: '_id name email',
+	});
+	if (!resetTokenFromDB) throw new Error("Reset token not found in the database or does not match");
+
+	// const payload = isTokenValidRefreshToken({ token: resetTokenFromDB.refreshToken });
+	// const userCheck = await Users.findOne({ email: payload.email });
+	const userCheck = await Users.findOne({  _id: req.user.userId  });
+	// console.log('payload', userCheck)
+	const isPasswordCorrect = await userCheck.comparePassword(oldPassword);
+	if (!isPasswordCorrect) {
+		throw new UnauthorizedError('Invalid Credentials');
+	}
+	userCheck.password = newPassword;
+	await userCheck.save();
+
+	// const clearResetToken = await UserRefreshToken.findOneAndDelete({ user: payload._id, refreshToken });
+	// console.log(clearResetToken)
+	return { msg: "Password has been reset successfully" };
+};
+
+const sendVerificationEmail = async (email, verificationToken) => {
+  // Buat tautan verifikasi yang mengarahkan ke endpoint verifikasi di aplikasi Anda
+  const verificationLink = `https://yourapp.com/verify?token=${verificationToken}`;
+
+  // Kirim email verifikasi ke pengguna
+  const mailOptions = {
+    to: email,
+    subject: 'Email Verification',
+    text: `Click the following link to verify your email: ${verificationLink}`,
+  };
+
+  await sendEmailFunction(mailOptions); // Ganti dengan kode pengiriman email Anda
+};
+
+// const signupUser = async (req, res) => {
+//   // ... kode validasi dan pembuatan pengguna ...
+
+//   // Buat token verifikasi
+//   const verificationToken = createVerificationToken(user._id);
+
+//   // Kirim email verifikasi
+//   await sendVerificationEmail(user.email, verificationToken);
+
+//   return {
+//     msg: 'Register successful. Please verify your email by clicking the link sent to your email!',
+//     data: user,
+//   };
+// };
+
+const sendPasswordResetEmail = async (email, resetToken) => {
+  // Buat tautan pemulihan kata sandi yang mengarahkan ke endpoint pemulihan kata sandi di aplikasi Anda
+  const resetLink = `https://yourapp.com/reset-password?token=${resetToken}`;
+
+  // Kirim email pemulihan kata sandi ke pengguna
+  const mailOptions = {
+    to: email,
+    subject: 'Password Reset',
+    text: `Click the following link to reset your password: ${resetLink}`,
+  };
+
+  await sendEmailFunction(mailOptions); // Ganti dengan kode pengiriman email Anda
+};
+
+
+
 
 module.exports = {
 	signupUser,
@@ -221,4 +319,5 @@ module.exports = {
 	logoutUser,
 	requestPasswordReset,
 	resetPassword,
+	changePassword
 };

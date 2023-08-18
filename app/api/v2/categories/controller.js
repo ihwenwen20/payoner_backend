@@ -1,6 +1,7 @@
 // import services categories sebagai pengganti import model category sebelumnya
 const {
 	getAllCategories,
+	getAllCategories2,
 	createCategories,
 	getOneCategories,
 	updateCategories,
@@ -29,9 +30,10 @@ const indexInfinite = async (req, res, next) => {
 		const search = req.query.search_query || "";
 		const queryFields = ['name'];
 
-		const filter = { company: req.user.company };
+		// const filter = { company: req.user.company };
 
-		const result = await getAllCategories(req, queryFields, search, page, size, filter);
+		// const result = await getAllCategories2(req, queryFields, search, page, size, filter);
+		const result = await getAllCategories2(req, queryFields, search, page, size);
 		res.status(StatusCodes.OK).json(result);
 	} catch (err) {
 		next(err);
@@ -75,9 +77,9 @@ const update = async (req, res, next) => {
 
 const destroy = async (req, res, next) => {
 	try {
-		const result = await deleteCategories(req);
+		const { msg } = await deleteCategories(req);
 		res.status(StatusCodes.OK).json({
-			data: result,
+			msg
 		});
 	} catch (err) {
 		next(err);

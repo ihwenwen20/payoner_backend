@@ -75,13 +75,16 @@ const sendPasswordResetEmail = (email, resetToken) => {
 const validateResetToken = async (token) => {
   try {
     const decodedToken = jwt.verify(token, jwtRefreshTokenSecret);
-    const userId = decodedToken.sub;
+    // const userId = decodedToken.sub;
+		// console.log('userId', userId)
 
     // Cek apakah token terkait dengan userId dalam database
     const resetTokenFromDB = await UserRefreshToken.findOne({ user: userId, refreshToken: token });
-    if (!resetTokenFromDB) throw new Error("Invalid reset token");
+    if (!resetTokenFromDB) throw new Error("Reset token not found in the database or does not match");
 
-    return userId;
+    // return userId;
+		return decodedToken
+
   } catch (error) {
     throw new Error("Invalid reset token");
   }
