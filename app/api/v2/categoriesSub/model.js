@@ -10,7 +10,6 @@ const subCategorySchema = new mongoose.Schema({
 		ref: 'Category',
 		required: true,
 	},
-	// Add any additional fields relevant to subcategories
 }, { timestamps: true });
 
 module.exports = mongoose.model('SubCategory', subCategorySchema);

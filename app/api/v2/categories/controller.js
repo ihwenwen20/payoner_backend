@@ -1,4 +1,3 @@
-// import services categories sebagai pengganti import model category sebelumnya
 const {
 	getAllCategories,
 	getAllCategories2,
@@ -43,9 +42,9 @@ const indexInfinite = async (req, res, next) => {
 
 const create = async (req, res, next) => {
 	try {
-		const result = await createCategories(req);
+		const { msg, data } = await createCategories(req);
 		res.status(StatusCodes.CREATED).json({
-			data: result,
+			msg, data
 		});
 	} catch (err) {
 		next(err);
@@ -55,7 +54,6 @@ const create = async (req, res, next) => {
 const find = async (req, res, next) => {
 	try {
 		const result = await getOneCategories(req);
-
 		return res.status(StatusCodes.OK).json({
 			data: result,
 		});
@@ -66,9 +64,9 @@ const find = async (req, res, next) => {
 
 const update = async (req, res, next) => {
 	try {
-		const result = await updateCategories(req);
+		const { msg, data } = await updateCategories(req);
 		return res.status(StatusCodes.OK).json({
-			data: result,
+			msg, data
 		});
 	} catch (err) {
 		next(err);

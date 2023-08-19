@@ -1,22 +1,21 @@
 const {
-	getAllProducts,
-	getAllProducts2,
-	createProduct,
-	getOneProduct,
-	updateProduct,
-	deleteProduct,
-} = require('../../../services/mongoose-v2/product');
-const Images = require('../images/model');
+	getAllBanks,
+	getAllBanks2,
+	createBank,
+	getOneBank,
+	updateBank,
+	deleteBank,
+} = require('../../../services/mongoose-v2/bank');
 const { StatusCodes } = require('http-status-codes');
 
 const index = async (req, res, next) => {
 	try {
-		const page = parseInt(req.query.page) || 1;
+		let page = parseInt(req.query.page) || 1;
 		const size = parseInt(req.query.size) || 10;
 		const search = req.query.search_query || "";
-		const queryFields = ['name', 'price', 'featured', 'freeShipping'];
+		const queryFields = ['ownerName', 'bankName', 'noRekening'];
 
-		const result = await getAllProducts(req, queryFields, search, page, size);
+		const result = await getAllBanks(req, queryFields, search, page, size);
 		res.status(StatusCodes.OK).json(result);
 	} catch (err) {
 		next(err);
@@ -25,16 +24,15 @@ const index = async (req, res, next) => {
 
 const indexInfinite = async (req, res, next) => {
 	try {
-		const page = parseInt(req.query.page) || 1;
+		let page = parseInt(req.query.page) || 1;
 		const size = parseInt(req.query.size) || 10;
 		const search = req.query.search_query || "";
-		const queryFields = ['name', 'price', 'featured', 'freeShipping',
-			'averageRating', 'numOfReviews'];
+		const queryFields = ['ownerName', 'bankName', 'noRekening'];
 
 		// const filter = { company: req.user.company };
 
-		// const result = await getAllProducts2(req, queryFields, search, page, size, filter);
-		const result = await getAllProducts2(req, queryFields, search, page, size);
+		// const result = await getAllCategories2(req, queryFields, search, page, size, filter);
+		const result = await getAllBanks2(req, queryFields, search, page, size);
 		res.status(StatusCodes.OK).json(result);
 	} catch (err) {
 		next(err);
@@ -43,7 +41,7 @@ const indexInfinite = async (req, res, next) => {
 
 const create = async (req, res, next) => {
 	try {
-		const { msg, data } = await createProduct(req);
+		const { msg, data } = await createBank(req);
 		res.status(StatusCodes.CREATED).json({
 			msg, data
 		});
@@ -54,7 +52,7 @@ const create = async (req, res, next) => {
 
 const find = async (req, res, next) => {
 	try {
-		const result = await getOneProduct(req);
+		const result = await getOneBank(req);
 		return res.status(StatusCodes.OK).json({
 			data: result,
 		});
@@ -65,9 +63,9 @@ const find = async (req, res, next) => {
 
 const update = async (req, res, next) => {
 	try {
-		const { msg, data } = await updateProduct(req);
+		const { msg, data } = await updateBank(req);
 		return res.status(StatusCodes.OK).json({
-			msg, data,
+			msg, data
 		});
 	} catch (err) {
 		next(err);
@@ -76,22 +74,13 @@ const update = async (req, res, next) => {
 
 const destroy = async (req, res, next) => {
 	try {
-		const { msg } = await deleteProduct(req);
+		const { msg } = await deleteBank(req);
 		res.status(StatusCodes.OK).json({
 			msg
 		});
 	} catch (err) {
 		next(err);
 	}
-};
-
-const uploadImage = async (req, res) => {
-	const result = await Images.create({
-		url: req.file
-			? `images/products/${req.file.filename}`
-			: 'images/products/brosur.png',
-	});
-	res.status(StatusCodes.OK).json({ data: result });
 };
 
 module.exports = {
@@ -101,5 +90,4 @@ module.exports = {
 	find,
 	update,
 	destroy,
-	uploadImage,
 };

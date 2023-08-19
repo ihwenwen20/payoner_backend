@@ -10,8 +10,8 @@ const PaymentSchema = new mongoose.Schema(
 		},
 		status: {
 			type: String,
-			enum: ['Y', 'N'],
-			default: 'Y'
+			enum: ['Paid', 'Unpaid', 'Confirmed', 'Pending'],
+			default: 'Paid'
 		},
 		image: {
 			type: mongoose.Types.ObjectId,

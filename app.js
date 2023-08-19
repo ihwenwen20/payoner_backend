@@ -14,14 +14,14 @@ const app = express();
 // });
 
 // // import router
-// const addressRouter = require('./app/api/v2/address/router');
-// const contactRouter = require('./app/api/v2/contacts/router');
+const addressRouter = require('./app/api/v2/address/router');
+const contactRouter = require('./app/api/v2/contacts/router');
 // const coveragesRouter = require('./app/api/v2/coverage/router');
 // const odcRouter = require('./app/api/v2/mikrotik/odc/router');
 // const odpRouter = require('./app/api/v2/mikrotik/odp/router');
 // const banksRouter = require('./app/api/v2/bank/router');
 // const userRefreshTokenRouter = require('./app/api/v2/userRefreshToken/router');
-// const companiesRouter = require('./app/api/v2/companies/router');
+const companiesRouter = require('./app/api/v2/companies/router');
 const authCMSRouter = require('./app/api/v2/auth/router');
 const categoriesRouter = require('./app/api/v2/categories/router');
 const categoriesSubRouter = require('./app/api/v2/categoriesSub/router');
@@ -76,8 +76,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 const v1 = '/api/users'
 
 // use router
-// app.use(addressRouter);
-// app.use(contactRouter);
+app.use(addressRouter);
+app.use(contactRouter);
 // app.use(coveragesRouter);
 // app.use(odcRouter);
 // app.use(odpRouter);

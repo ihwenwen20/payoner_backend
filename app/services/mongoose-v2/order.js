@@ -10,7 +10,7 @@ const fakeStripeAPI = async ({ amount, currency }) => {
 };
 
 const createOrder = async (req) => {
-	const { items: cartItems, tax, shippingFee } = req.body;
+	const { items: cartItems, tax, shippingFee, personalDetail } = req.body;
 
 	if (!cartItems || cartItems.length < 1) {
 		throw new NotFoundError();
@@ -27,19 +27,24 @@ const createOrder = async (req) => {
 
 	for (const item of cartItems) {
 		const dbProduct = await Product.findOne({ _id: item.product });
-		if (!dbProduct) {
-			throw new NotFoundError(`No product with id : ${item.product}`);
-		}
-		const { name, price, image, _id } = dbProduct;
+		if (!dbProduct) throw new NotFoundError(`No product with id : ${item.product}`);
+		if (item.amount > dbProduct.inventory) throw new BadRequestError(`Sorry, Product with id : ${item.product} Out of Stock`);
+		dbProduct.inventory -= item.amount;
+		await dbProduct.save();
+		// const stock = await Product.updateOne({ _id: item.product }, { $inc: { inventory: -item.amount } });
+
+		const { name, price, image, inventory, _id, } = dbProduct;
 		const singleOrderItem = {
 			amount: item.amount,
 			name,
 			price,
 			image,
+			inventory,
 			product: _id,
 		};
 		// add item to order
 		orderItems = [...orderItems, singleOrderItem];
+
 		// calculate subtotal
 		subtotal += item.amount * price;
 	}
@@ -63,9 +68,14 @@ const createOrder = async (req) => {
 			tax,
 			shippingFee,
 			clientSecret: paymentIntent.client_secret,
-			customer: req.body.customer
+			customer: req.body.customer,
+			personalDetail: {
+				name: personalDetail.name,
+				email: personalDetail.email,
+			}
 			// user: req.user.userId,
 		});
+		if (!result) throw new BadRequestError();
 
 		return { msg: "Order created successfully", data: result };
 	} catch (err) {
@@ -108,7 +118,6 @@ const getSingleOrder = async (req) => {
 		path: 'customer',
 		select: 'name, email',
 	});
-
 	if (!result) throw new NotFoundError();
 
 	return result;
@@ -117,14 +126,14 @@ const getSingleOrder = async (req) => {
 const updateOrder = async (req) => {
 	const { id } = req.params;
 
-	const order = await Orders.findOneAndUpdate({ _id: id }, req.body, {
+	const result = await Orders.findOneAndUpdate({ _id: id }, req.body, {
 		new: true,
 		runValidators: true,
 	});
-	if (!order) throw new NotFoundError(id);
-	// checkPermissions(req.user, order.user);
+	if (!result) throw new NotFoundError(id);
+	// checkPermissions(req.user, result.user);
 
-	return { msg: "Updated Successfully", data: order };
+	return { msg: "Updated Data Successfully", data: result };
 };
 
 const deleteOrder = async (req) => {

@@ -10,22 +10,26 @@ const userSchema = new mongoose.Schema(
 		},
 		username: {
 			type: String,
+			trim: true,
 			unique: [true, "UserName Already Exist"],
 			minlength: 2,
 		},
 		name: {
 			type: String,
+			trim: true,
 			required: [true, 'Please provide name'],
 			minlength: 3,
 			maxlength: 50,
 		},
 		email: {
 			type: String,
+			trim: true,
 			unique: true,
 			required: [true, 'Please provide email'],
 		},
 		password: {
 			type: String,
+			trim: true,
 			required: [true, 'Password is required'],
 			minlength: 6,
 		},
@@ -39,30 +43,35 @@ const userSchema = new mongoose.Schema(
 		contact: {
 			type: mongoose.Types.ObjectId,
 			ref: 'Contact',
+			// required:true
 		},
 		role: {
 			type: String,
-			enum: ['Developer','Company', 'Owner'],
+			enum: ['Developer', 'Company', 'Owner'],
 			default: 'Owner',
+			required: true
 		},
 		status: {
 			type: String,
-			enum: ['active', 'inactive', 'pending'],
-			default: 'inactive',
+			enum: ['Active', 'Inactive', 'Pending', 'Suspend'],
+			default: 'Inactive',
+			required: true
 		},
 		currentPlan: {
 			type: String,
+			trim: true,
 		},
 		billing: {
 			type: String,
+			trim: true,
 		},
-		// company: {
-		// 	type: mongoose.Types.ObjectId,
-		// 	ref: 'Company',
-		// 	// required: true,
-		// },
+		companies: [{
+			type: mongoose.Types.ObjectId,
+			ref: 'Company',
+		}],
 		otp: {
 			type: String,
+			trim: true,
 		},
 	},
 	{ timestamps: true }

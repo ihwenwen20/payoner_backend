@@ -43,7 +43,7 @@ const getAllCustomers2 = async (req, queryFields, search, page, size, filter) =>
 const createCustomer = async (req) => {
 	const { username, name, email, password, confirmPassword } = req.body;
 
-	if (!name || !username || !email || !password || !confirmPassword) throw new BadRequestError("Please provide all required field");
+	if (!name || !username || !email || !password || !confirmPassword) throw new NotFoundError();
 	if (password !== confirmPassword) throw new BadRequestError("Password and confirm password do not match");
 
 	const check = await Customers.findOne({ username });
@@ -51,6 +51,7 @@ const createCustomer = async (req) => {
 
 	try {
 		const result = await Customers.create(req.body);
+		if (!result) throw new BadRequestError();
 
 		return { msg: "Customer created successfully", data: result };
 	} catch (err) {

@@ -26,7 +26,7 @@ const index = async (req, res, next) => {
 		const page = parseInt(req.query.page) || 1;
 		const size = parseInt(req.query.size) || 10;
 		const search = req.query.search_query || "";
-		const queryFields = ['name'];
+		const queryFields = ['status'];
 
 		const result = await getAllOrders(req, queryFields, search, page, size);
 		res.status(StatusCodes.OK).json(result);
@@ -67,6 +67,7 @@ const getCurrentUserOrders = async (req, res) => {
 	const orders = await Order.find({ user: req.user.userId });
 	res.status(StatusCodes.OK).json({ orders, count: orders.length });
 };
+
 const update = async (req, res, next) => {
 	try {
 		const { msg, data } = await updateOrder(req);

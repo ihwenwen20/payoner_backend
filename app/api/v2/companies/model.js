@@ -4,42 +4,40 @@ const companiesSchema = new mongoose.Schema(
 	{
 		companyName: {
 			type: String,
-			required: [true, 'Company must be filled'],
+			trim: true,
+			required: true,
 		},
 		email: {
 			type: String,
+			trim: true,
 			unique: true,
 		},
 		password: {
 			type: String,
-			required: [true, 'Password is required'],
+			trim: true,
 			minlength: 6,
+			required: true,
 		},
 		mottoCompany: {
 			type: String,
+			trim: true,
 		},
 		about: {
 			type: String,
+			trim: true,
 		},
 		logo: {
-			// type: String,
 			type: mongoose.Types.ObjectId,
 			ref: 'Image',
 		},
 		birthday: {
 			type: String,
+			trim: true,
 		},
 		contact: {
 			type: mongoose.Types.ObjectId,
 			ref: 'Contact',
 		},
-		// phone: {
-		// 	type: String,
-		// },
-		// address: {
-		// 	type: mongoose.Schema.Types.ObjectId,
-		// 	ref: 'Address',
-		// },
 		terms: {
 			type: String,
 		},
@@ -48,8 +46,9 @@ const companiesSchema = new mongoose.Schema(
 		},
 		status: {
 			type: String,
-			enum: ['active', 'inactive'],
-			default: 'inactive',
+			enum: ['Active', 'Inactive', 'Pending', 'Suspend'],
+			default: 'Inactive',
+			required: true
 		},
 		speedtest: {
 			type: String,

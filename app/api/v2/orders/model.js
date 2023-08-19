@@ -5,6 +5,7 @@ const SingleOrderItemSchema = mongoose.Schema({
   image: { type: String, required: true },
   price: { type: Number, required: true },
   amount: { type: Number, required: true },
+  inventory: { type: Number, required: true },
   product: {
     type: mongoose.Schema.ObjectId,
     ref: 'Product',
@@ -52,22 +53,22 @@ const OrderSchema = mongoose.Schema(
 			ref: 'Customer',
 			required: true,
 		},
-		// personalDetail: {
-		// 	name: {
-		// 		type: String,
-		// 		required: [true, 'Please provide name'],
-		// 		minlength: 3,
-		// 		maxlength: 50,
-		// 	},
-		// 	email: {
-		// 		type: String,
-		// 		required: [true, 'Please provide email'],
-		// 	},
-		// 	role: {
-		// 		type: String,
-		// 		default: 'Client',
-		// 	},
-		// },
+		personalDetail: {
+			name: {
+				type: String,
+				required: [true, 'Please provide name'],
+				minlength: 3,
+				maxlength: 50,
+			},
+			email: {
+				type: String,
+				required: [true, 'Please provide email'],
+			},
+			role: {
+				type: String,
+				default: 'Client',
+			},
+		},
 		// historyTransaction: {
 		// 	title: {
 		// 		type: String,

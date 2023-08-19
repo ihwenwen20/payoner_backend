@@ -1,22 +1,18 @@
 const Categories = require('../../api/v2/categories/model');
 const SubCategories = require('../../api/v2/categoriesSub/model');
+const { checkingCategories } = require('./categories')
 const { NotFoundError, BadRequestError, DuplicateError } = require('../../errors');
 const { paginateData, infiniteScrollData } = require('../../utils/paginationUtils'); // Sesuaikan dengan lokasi utilitas Anda
 
 const createSubCategory = async (req) => {
-	const { name, categoryId } = req.body;
+	const { name, id } = req.body;
 
-	const category = await Categories.findOne({
-		_id: categoryId,
-	});
-
-	if (!category) throw new NotFoundError('Category not found');
+	const category = await checkingCategories(id)
 
 	const check = await SubCategories.findOne({
 		name,
 		category: category._id,
 	});
-
 	if (check) throw new DuplicateError();
 
 	try {
@@ -24,8 +20,9 @@ const createSubCategory = async (req) => {
 			name,
 			category: category._id,
 		});
+		if (!result) throw new BadRequestError();
 
-		return result;
+		return { msg: "SubCategories created successfully", data: result };
 	} catch (err) {
 		throw err;
 	}
@@ -76,48 +73,36 @@ const updateSubCategory = async (req) => {
 	const { id } = req.params;
 	const { name, categoryId } = req.body;
 
-	const category = await Categories.findOne({
-		_id: categoryId,
-	});
-
-	if (!category) throw new NotFoundError('Category not found');
+	const category = await checkingCategories(categoryId)
 
 	const check = await SubCategories.findOne({
 		name,
 		category: category._id,
 		_id: { $ne: id },
 	});
-
-	if (check) throw new BadRequestError('Duplicate Subcategory Name');
+	if (check) throw new DuplicateError();
 
 	const result = await SubCategories.findOneAndUpdate(
 		{ _id: id },
 		{ name, category: category._id },
 		{ new: true, runValidators: true }
 	);
+	if (!result) throw new BadRequestError(id);
 
-	if (!result) throw new NotFoundError(`No Subcategory with id: ${id}`);
-
-	return result;
+	return { msg: "Updated Data Successfully", data: result };
 };
 
 const deleteSubCategory = async (req) => {
 	const { id } = req.params;
-
-	const result = await SubCategories.findOne({
-		_id: id,
-	});
-
-	if (!result) throw new NotFoundError(id);
-
+	const result = await checkingSubCategory(id)
 	await result.deleteOne();
 
-	return { msg: 'Deleted Successfully' };
+	return { msg: 'Deleted Successfully', data: result  };
 };
 
 const checkingSubCategory = async (id) => {
 	const result = await SubCategories.findOne({ _id: id });
-	if (!result) throw new NotFoundError(`No Subcategory with id: ${id}`);
+	if (!result) throw new NotFoundError(id);
 	return result;
 };
 

@@ -1,6 +1,6 @@
 const Categories = require('../../api/v2/categories/model');
 const { NotFoundError, BadRequestError, DuplicateError } = require('../../errors');
-const { paginateData, infiniteScrollData } = require('../../utils/paginationUtils'); // Sesuaikan dengan lokasi utilitas Anda
+const { paginateData, infiniteScrollData } = require('../../utils/paginationUtils');
 
 // Cara 1
 // const getAllCategories = async (req) => {
@@ -75,22 +75,24 @@ const getAllCategories2 = async (req, queryFields, search, page, size, filter) =
 const createCategories = async (req) => {
 	const { name } = req.body;
 
-	// cari categories dengan field name
+	const company = req.user.companies[0];
+
 	const check = await Categories.findOne({
 		name,
 		// company: req.user.company,
+		company: company._id,
 	});
-
-	// apa bila check true / data categories sudah ada maka kita tampilkan error bad request dengan message Duplicate Category Name
 	if (check) throw new DuplicateError(name);
 
 	try {
 		const result = await Categories.create({
-			name,
+			...req.body,
 			// company: req.user.company,
+			company: company._id,
 		});
+		if (!result) throw new BadRequestError();
 
-		return result;
+		return { msg: "Category created successfully", data: result };
 	} catch (err) {
 		throw err
 	}
@@ -103,8 +105,7 @@ const getOneCategories = async (req) => {
 		_id: id,
 		// company: req.user.company,
 	});
-
-	if (!result) throw new NotFoundError(`No Category with id :  ${id}`);
+	if (!result) throw new NotFoundError(id);
 
 	return result;
 };
@@ -112,47 +113,36 @@ const getOneCategories = async (req) => {
 const updateCategories = async (req) => {
 	const { id } = req.params;
 	const { name } = req.body;
-
+	await checkingCategories(id)
 	// cari categories dengan field name dan id selain dari yang dikirim dari params
 	const check = await Categories.findOne({
 		name,
 		// company: req.user.company,
 		_id: { $ne: id },
 	});
-
-	// apa bila check true / data categories sudah ada maka kita tampilkan error bad request dengan message Duplicate Category Name
-	if (check) throw new BadRequestError('Duplicate Category Name');
+	if (check) throw new DuplicateError(name);
 
 	const result = await Categories.findOneAndUpdate(
 		{ _id: id },
-		{ name, },
+		req.body,
 		{ new: true, runValidators: true }
 	);
+	if (!result) throw new BadRequestError();
 
-	// jika id result false / null maka akan menampilkan error `No Category with id` yang dikirim client
-	if (!result) throw new NotFoundError(`No Category with id :  ${id}`);
-
-	return result;
+	return { msg: "Updated Data Successfully", data: result };
 };
 
 const deleteCategories = async (req) => {
 	const { id } = req.params;
-
-	const result = await Categories.findOne({
-		_id: id,
-		// company: req.user.company,
-	});
-
-	if (!result) throw new NotFoundError(`No Category with id :  ${id}`);
-
+	const result = await checkingCategories(id)
 	await result.deleteOne();
 
-	return { msg: "Deleted Successfully" }
+	return { msg: 'Deleted Successfully', data: result };
 };
 
 const checkingCategories = async (id) => {
 	const result = await Categories.findOne({ _id: id });
-	if (!result) throw new NotFoundError(`No Category with id :  ${id}`);
+	if (!result) throw new NotFoundError(id);
 	return result;
 };
 

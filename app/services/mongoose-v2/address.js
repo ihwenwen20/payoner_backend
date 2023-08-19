@@ -1,106 +1,75 @@
 const Address = require('../../api/v2/address/model');
-const { NotFoundError, BadRequestError } = require('../../errors');
+const { NotFoundError, BadRequestError, DuplicateError } = require('../../errors');
+const { paginateData, infiniteScrollData } = require('../../utils/paginationUtils');
 
-const getAllAddresses = async (req) => {
-  const result = await Address.find();
-  return result;
+const getAllAddresses = async (req, queryFields, search, page, size, filter) => {
+	const result = await paginateData(Address, queryFields, search, page, size, filter);
+	return result;
+};
+
+const getAllAddresses2 = async (req, queryFields, search, page, size, filter) => {
+	const result = await infiniteScrollData(Address, queryFields, search, page, size, filter);
+	return result;
 };
 
 const createAddress = async (req) => {
-  const { address, desa, kecamatan, city, zipcode, province, country, latitude, longitude } = req.body;
+	const { address } = req.body;
+	const check = await Address.findOne({
+		address,
+		// company: req.user.company,
+	});
+	if (check) throw new DuplicateError(address);
 
-  try {
-    const newAddress = await Address.create({
-      address,
-      desa,
-      kecamatan,
-      city,
-      zipcode,
-      province,
-      country,
-      geo: {
-        latitude,
-        longitude,
-      },
-    });
-    return newAddress;
-  } catch (err) {
-    throw err;
-  }
+	const result = await Address.create({ ...req.body });
+	if (!result) throw new BadRequestError();
+
+	return { msg: "Address created successfully", data: result };
 };
 
-const getAddressById = async (req) => {
-  const { id } = req.params;
+const getDetailAddress = async (req) => {
+	const { id } = req.params;
+	const result = await Address.findOne({
+		_id: id,
+		// company: req.user.company,
+	});
+	if (!result) throw new NotFoundError(id);
 
-  const address = await Address.findById(id);
-  if (!address) {
-    throw new NotFoundError(`No Address with id: ${id}`);
-  }
-
-  return address;
+	return result;
 };
 
 const updateAddress = async (req) => {
-  const { id } = req.params;
-  const { address, desa, kecamatan, city, zipcode, province, country, latitude, longitude } = req.body;
+	const { id } = req.params;
+	await checkingAddress(id);
+	const result = await Address.findOneAndUpdate(
+		{ _id: id },
+		req.body,
+		{ new: true, runValidators: true }
+	);
+	if (!result) throw new BadRequestError();
 
-  const check = await Address.findOne({ address, _id: { $ne: id } });
-  if (check) {
-    throw new BadRequestError('Duplicate Address');
-  }
-
-  const updatedAddress = await Address.findByIdAndUpdate(
-    id,
-    {
-      address,
-      desa,
-      kecamatan,
-      city,
-      zipcode,
-      province,
-      country,
-      geo: {
-        latitude,
-        longitude,
-      },
-    },
-    { new: true, runValidators: true }
-  );
-
-  if (!updatedAddress) {
-    throw new NotFoundError(`No Address with id: ${id}`);
-  }
-
-  return updatedAddress;
+	return { msg: "Updated Data Successfully", data: result };
 };
 
 const deleteAddress = async (req) => {
-  const { id } = req.params;
+	const { id } = req.params;
+	const result = await checkingAddress(id)
+	await result.deleteOne();
 
-  const address = await Address.findById(id);
-  if (!address) {
-    throw new NotFoundError(`No Address with id: ${id}`);
-  }
-
-  await address.deleteOne();
-
-  return { msg: 'Deleted Successfully' };
+	return { msg: 'Deleted Successfully', data: result };
 };
 
 const checkingAddress = async (id) => {
-  const address = await Address.findById(id);
-  if (!address) {
-    throw new NotFoundError(`No Address with id: ${id}`);
-  }
-
-  return address;
+	const result = await Address.findOne({ _id: id });
+	if (!result) throw new NotFoundError(id);
+	return result;
 };
 
 module.exports = {
-  getAllAddresses,
-  createAddress,
-  getAddressById,
-  updateAddress,
-  deleteAddress,
-  checkingAddress,
+	getAllAddresses,
+	getAllAddresses2,
+	createAddress,
+	getDetailAddress,
+	updateAddress,
+	deleteAddress,
+	checkingAddress,
 };

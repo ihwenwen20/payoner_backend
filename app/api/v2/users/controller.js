@@ -14,7 +14,7 @@ const index = async (req, res, next) => {
 		let page = parseInt(req.query.page) || 1;
 		const size = parseInt(req.query.size) || 10;
 		const search = req.query.search_query || "";
-		const queryFields = ['username', 'name', 'email'];
+		const queryFields = ['username', 'name', 'email', 'status'];
 
 		const result = await getAllUsers(req, queryFields, search, page, size);
 		res.status(StatusCodes.OK).json(result);
@@ -28,7 +28,11 @@ const indexInfinite = async (req, res, next) => {
 		let page = parseInt(req.query.page) || 1;
 		const size = parseInt(req.query.size) || 10;
 		const search = req.query.search_query || "";
-		const queryFields = ['username', 'name', 'email'];
+		const queryFields = ['username', 'name', 'email', 'status'];
+
+		// const filter = { company: req.user.company };
+
+		// const result = await getAllUsers2(req, queryFields, search, page, size, filter);
 
 		const result = await getAllUsers2(req, queryFields, search, page, size);
 		res.status(StatusCodes.OK).json(result);
@@ -39,10 +43,9 @@ const indexInfinite = async (req, res, next) => {
 
 const create = async (req, res, next) => {
 	try {
-		const result = await createUser(req);
-
+		const { msg, data } = await createUser(req);
 		res.status(StatusCodes.CREATED).json({
-			data: result,
+			msg, data
 		});
 	} catch (err) {
 		next(err);
@@ -63,10 +66,9 @@ const find = async (req, res, next) => {
 
 const update = async (req, res, next) => {
 	try {
-		const result = await updateUser(req);
-
+		const { msg, data } = await updateUser(req);
 		res.status(StatusCodes.OK).json({
-			data: result,
+			msg, data
 		});
 	} catch (err) {
 		next(err);
@@ -75,10 +77,9 @@ const update = async (req, res, next) => {
 
 const destroy = async (req, res, next) => {
 	try {
-		const result = await deleteUser(req);
-
+		const { msg } = await deleteUser(req);
 		res.status(StatusCodes.OK).json({
-			data: result,
+			msg
 		});
 	} catch (err) {
 		next(err);
@@ -88,7 +89,6 @@ const destroy = async (req, res, next) => {
 const changeStatus = async (req, res, next) => {
 	try {
 		const result = await changeStatusUser(req);
-
 		res.status(StatusCodes.OK).json({
 			data: result,
 		});

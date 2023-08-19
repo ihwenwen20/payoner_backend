@@ -1,118 +1,107 @@
 const Contact = require('../../api/v2/contacts/model');
 const Address = require('../../api/v2/address/model');
-const { NotFoundError, BadRequestError } = require('../../errors');
+const { checkingAddress } = require('./address')
+const { NotFoundError, BadRequestError, DuplicateError } = require('../../errors');
+const { paginateData, infiniteScrollData } = require('../../utils/paginationUtils'); // Sesuaikan dengan lokasi utilitas Anda
 
-const getAllContacts = async () => {
-  const result = await Contact.find();
+const getAllContacts = async (req, queryFields, search, page, size, filter) => {
+	const result = await paginateData(Contact, queryFields, search, page, size, filter);
+	const populateOptions = [
+		{
+			path: 'address',
+			select: 'address',
+		},
+	];
 
-  return result;
+	await Contact.populate(result.data, populateOptions);
+	return result;
 };
 
-const createContact = async (contactData) => {
-  const { name, email, phone, address, desa, kecamatan, city, zipcode, province, country, latitude, longitude } = contactData;
+const getAllContacts2 = async (req, queryFields, search, page, size, filter) => {
+	const result = await infiniteScrollData(Contact, queryFields, search, page, size, filter);
+	const populateOptions = [
+		{
+			path: 'address',
+			select: 'address',
+		},
+	];
 
-  try {
-    const newAddress = await Address.create({
-      address,
-      desa,
-      kecamatan,
-      city,
-      zipcode,
-      province,
-      country,
-      geo: {
-        latitude,
-        longitude,
-      },
-    });
-
-    const newContact = new Contact({
-      name,
-      email,
-      phone,
-      address: newAddress._id,
-    });
-
-    const savedContact = await newContact.save();
-
-    return savedContact;
-  } catch (error) {
-    throw error;
-  }
+	await Contact.populate(result.data, populateOptions);
+	return result;
 };
 
-const getOneContact = async (id) => {
-  const result = await Contact.findOne({
-    _id: id,
-  }).populate({
+const createContact = async (req) => {
+	const { address, name } = req.body;
+	const checkAddress = await checkingAddress(address)
+
+	const check = await Contact.findOne({
+		name,
+		address: checkAddress._id,
+	});
+	if (check) throw new DuplicateError();
+	const result = await Contact.create({ ...req.body });
+	if (!result) throw new BadRequestError();
+
+	return { msg: "Contact created successfully", data: result };
+};
+
+const getOneContact = async (req) => {
+	const { id } = req.params;
+	const result = await Contact.findOne({
+		_id: id,
+	}).populate({
 		path: 'address',
 	});
+	if (!result) throw new NotFoundError();
 
-  if (!result) throw new NotFoundError(`No Contact with id: ${id}`);
-
-  return result;
+	return result;
 };
 
-const updateContact = async (id, contactData) => {
-  const { name, email, phone, address, desa, kecamatan, city, zipcode, province, country, latitude, longitude } = contactData;
+const updateContact = async (req) => {
+	const { id } = req.params;
+	const { name, address } = req.body;
+	await checkingContact(id)
+	// const checkAddress = await checkingAddress(address)
 
-  try {
-    const contact = await Contact.findById(id);
+	const check = await Contact.findOne({
+		name,
+		// address: checkAddress._id,
+		_id: { $ne: id },
+	});
+	if (check) throw new DuplicateError();
 
-    if (!contact) {
-      throw new NotFoundError(`Tidak ada kontak dengan ID: ${id}`);
-    }
+	const result = await Contact.findOneAndUpdate(
+		{ _id: id },
+		{
+			...req.body,
+			// address: checkAddress._id
+		},
+		{ new: true, runValidators: true }
+	);
+	if (!result) throw new BadRequestError(id);
 
-    contact.name = name;
-    contact.email = email;
-    contact.phone = phone;
-
-    // Temukan alamat terkait berdasarkan ID
-    const address = await Address.findById(contact.address);
-
-    if (!address) {
-      throw new NotFoundError(`Tidak ada alamat dengan ID: ${contact.address}`);
-    }
-
-    // Perbarui bidang alamat
-    address.address = address;
-    address.desa = desa;
-    address.kecamatan = kecamatan;
-    address.city = city;
-    address.zipcode = zipcode;
-    address.province = province;
-    address.country = country;
-    address.geo.latitude = latitude;
-    address.geo.longitude = longitude;
-
-    await address.save();
-    const savedContact = await contact.save();
-
-    return savedContact;
-  } catch (error) {
-    throw error;
-  }
+	return { msg: "Updated Data Successfully", data: result };
 };
 
-const deleteContact = async (id) => {
-  const result = await Contact.findByIdAndDelete(id);
-
-  if (!result) throw new NotFoundError(`No Contact with id: ${id}`);
-
-  return { msg: 'Deleted Successfully' };
+const deleteContact = async (req) => {
+	const { id } = req.params;
+	const result = await checkingContact(id)
+	await result.deleteOne();
+	return { msg: 'Deleted Successfully', data: result };
 };
 
 const checkingContact = async (id) => {
-	const result = await Contact.findOne({_id: id});
-	if (!result) throw new NotFoundError(`Contact with id :  ${id} Not Found`);
+	const result = await Contact.findOne({ _id: id });
+	if (!result) throw new NotFoundError(id);
 	return result;
 };
 
 module.exports = {
-  getAllContacts,
-  createContact,
-  getOneContact,
-  updateContact,
-  deleteContact,
+	getAllContacts,
+	getAllContacts2,
+	createContact,
+	getOneContact,
+	updateContact,
+	deleteContact,
 	checkingContact,
 };

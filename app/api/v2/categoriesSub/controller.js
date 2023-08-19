@@ -41,9 +41,9 @@ const indexInfinite = async (req, res, next) => {
 
 const create = async (req, res, next) => {
 	try {
-		const result = await createSubCategory(req);
+		const { msg, data } = await createSubCategory(req);
 		res.status(StatusCodes.CREATED).json({
-			data: result,
+			msg, data
 		});
 	} catch (err) {
 		next(err);
@@ -63,9 +63,9 @@ const find = async (req, res, next) => {
 
 const update = async (req, res, next) => {
 	try {
-		const result = await updateSubCategory(req);
+		const { msg, data } = await updateSubCategory(req);
 		return res.status(StatusCodes.OK).json({
-			data: result,
+			msg, data,
 		});
 	} catch (err) {
 		next(err);
