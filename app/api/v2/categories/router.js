@@ -1,24 +1,26 @@
 const express = require('express');
 const router = express();
 
-const {create, index, indexInfinite,find, update, destroy} = require('./controller');
+const { create, index, find, update, destroy } = require('./controller');
 
 const {
 	authenticateUser,
+	authenticateCompany,
 	authorizeRoles,
+	authorizeRolesCompany,
 } = require('../../../middlewares/auth');
 
-// router.get('/categories', authenticateUser, authorizeRoles('company'), index);
-// router.post('/categories', authenticateUser, authorizeRoles('company'), create);
-// router.get('/categories/:id', authenticateUser, authorizeRoles('company'), find);
-// router.put('/categories/:id', authenticateUser, authorizeRoles('company'), update);
-// router.delete('/categories/:id', authenticateUser, authorizeRoles('company'), destroy);
+router.get('/categories', authenticateCompany, authorizeRolesCompany('Developer', 'Owner', 'Company', 'Admin'), index);
+router.post('/categories', authenticateCompany, authorizeRolesCompany('Developer', 'Owner', 'Company', 'Admin'), create);
+router.get('/categories/:id', authenticateCompany, authorizeRolesCompany('Developer', 'Owner', 'Company', 'Admin'), find);
+router.put('/categories/:id', authenticateCompany, authorizeRolesCompany('Developer', 'Owner', 'Company', 'Admin'), update);
+router.delete('/categories/:id', authenticateCompany, authorizeRolesCompany('Developer', 'Owner', 'Company', 'Admin'), destroy);
 
-router.get('/categories', index);
-router.get('/categories/infinite', indexInfinite);
-router.post('/categories', create);
-router.get('/categories/:id', find);
-router.put('/categories/:id', update);
-router.delete('/categories/:id', destroy);
+// router.get('/categories', index);
+// router.get('/categories/infinite', indexInfinite);
+// router.post('/categories', create);
+// router.get('/categories/:id', find);
+// router.put('/categories/:id', update);
+// router.delete('/categories/:id', destroy);
 
 module.exports = router;

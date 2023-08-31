@@ -1,174 +1,292 @@
 const Companies = require('../../api/v2/companies/model');
-const Contact = require('../../api/v2/contacts/model');
-const Address = require('../../api/v2/address/model');
+const Users = require('../../api/v2/users/model');
+const Income = require('../../api/v2/accounting/income/model');
+const Expense = require('../../api/v2/accounting/expense/model');
+const Contact = require('../../api/v2/contacts/model')
+// const { checkingUser } = require('./users');
+const { checkingImage } = require('./images');
+const { checkingContact, createContact, updateContact } = require('./contact.js')
 const { NotFoundError, BadRequestError, DuplicateError } = require('../../errors');
-const { paginateData, infiniteScrollData } = require('../../utils/paginationUtils');
+const { paginate } = require('../../utils/paginationUtils');
 
-const getAllCompanies = async (req, queryFields, search, page, size, filter) => {
-	const result = await paginateData(Companies, queryFields, search, page, size, filter);
+const getAllCompanies = async (req, queryFields, search, page, size) => {
+	console.log('token', req.user)
+	// console.log('token company', req.company)
+	// Mencocokkan perusahaan berdasarkan _id yang ada dalam req.user.companies
+	// let condition = { _id: { $in: req.user.companyId } };
+	// let condition = {};
+	let condition = { owner: req.user.userId };
+	const result = await paginate(Companies, queryFields, search, page, size, filter = condition);
 	const populateOptions = [
 		{
 			path: 'owner',
-			select: 'username, name, email',
+			select: 'name email',
 		},
 		{
 			path: 'contact',
 			select: 'phone address',
+			// populate: 'addressId',
+			populate: {
+				path: 'addressId',
+				select: 'address',
+			},
 		},
 		{
 			path: 'logo',
-			select: '_id url',
+			select: 'url',
 		}
 	];
-
-	await Companies.populate(result.data, populateOptions);
+	const useQuery = Companies.find(condition)
+		.select('-password -role')
+	const companyData = await useQuery.lean().exec();
+	await Companies.populate(companyData, populateOptions);
+	result.data = companyData;
+	// await Companies.populate(result.data, populateOptions);
 	return result;
 };
 
-const getAllCompanies2 = async (req, queryFields, search, page, size, filter) => {
-	const result = await infiniteScrollData(Companies, queryFields, search, page, size, filter);
-	const populateOptions = [
-		{
-			path: 'owner',
-			select: 'username, name, email',
-		},
-		{
-			path: 'contact',
-			select: 'phone address',
-		},
-		{
-			path: 'logo',
-			select: '_id url',
-		}
-	];
+// const createCompany = async (req) => {
+// 	// console.log('token from company', req.user);
+// 	const { companyName, email, password, confirmPassword } = req.body;
+// 	if (!companyName || !email || !password || !confirmPassword) throw new NotFoundError(companyName, email, password);
+// 	if (password !== confirmPassword) throw new BadRequestError("Password and Confirm Password do not match");
 
-	await Companies.populate(result.data, populateOptions);
-	return result;
-};
+// 	const check = await Companies.findOne({
+// 		companyName, email,
+// 		// owner: req.user.userId,
+// 		// companyName: { $ne: companyName },
+// 		// email: { $ne: email },
+// 		_id: { $ne: req.user.companies },
+// 	});
+// 	console.log('check companies', check)
+// 	if (check) throw new DuplicateError(companyName, email);
+// 	const logos = await createImages(req)
+// 	console.log('logo', logos)
+// 	const contacts = await createContact(req)
+// 	console.log('contact companies', contacts)
+// 	const result = await Companies.create({
+// 		...req.body,
+// 		// owner: req.user.userId,
+// 		logo: logos.data._id,
+// 		contact: contacts.data._id,
+// 	});
+// 	if (!result) throw new BadRequestError();
 
-// const getAllCompanies = async (req) => {
-// 	const result = await Companies.find({ owner: req.user.owner });
+// 	delete result._doc.password;
+// 	delete result._doc.companies;
+// 	delete result._doc.otp;
+// 	// console.log('result companies', result)
 
-// 	return result;
+// 	return { msg: "Companies created successfully", data: result };
 // };
 
 const createCompany = async (req) => {
-	const { companyName, email, password, mottoCompany, about, logo, birthday, terms, policy, status, speedtest, watermark, phone, address } = req.body;
+	console.log('token from company', req.user);
+	const { companyName, email, password, confirmPassword, logo } = req.body;
+	if (!companyName || !email || !password || !confirmPassword) throw new NotFoundError(companyName, email, password);
+	if (password !== confirmPassword) throw new BadRequestError("Password and Confirm Password does no match");
+
+	const owners = await Users.findOne({ _id: req.user.userId });
+	if (!owners) throw new NotFoundError(req.user.userId);
+	console.log('tes owner', owners)
 
 	const check = await Companies.findOne({
-		companyName,
-		owner: req.user.company,
+		companyName, email,
+		owner: req.user.userId,
+		// companyName: { $ne: companyName },
+		// email: { $ne: email },
 	});
-	if (check) throw new DuplicateError();
+	console.log('check companies', check)
+	if (check) throw new DuplicateError(companyName, email);
+	const logos = await checkingImage(logo)
+	const contacts = await createContact(req)
+	console.log('contact company', contacts)
+	const result = new Companies({
+		...req.body,
+		owner: req.user.userId,
+		logo: logos._id,
+		contact: contacts.data._id,
+	});
+	await result.save();
+	if (!result || !result.contact || result.contact.length === 0) {
+		console.log("Company or Company's contact is empty");
+		await Contact.findByIdAndDelete(contacts.data._id);
+		await result.deleteOne();
+		throw new BadRequestError("Invalid Contact Data.");
+	};
+	console.log('result companies', result)
+	owners.companies.push(result._id);
+	await owners.save();
 
-	const result = await Companies.create({
-		companyName,
-		email,
-		password,
-		mottoCompany,
-		about,
-		logo,
-		birthday,
-		terms,
-		policy,
-		status,
-		speedtest,
-		watermark,
-		phone,
-		address,
-		owner: req.user._id,
+	const income = new Income({
+		company: result._id
 	});
-	if (!result) throw new BadRequestError();
+
+	await income.save();
+	const expense = new Expense({
+		company: result._id
+	});
+	await expense.save();
+
+	delete result._doc.password;
+	delete result._doc.role;
+	// delete result._doc.status;
 
 	return { msg: "Companies created successfully", data: result };
 };
 
-const getOneCompany = async (req) => {
+const getOneCompany = async (req,) => {
 	const { id } = req.params;
 	const result = await Companies.findOne({
 		_id: id,
-		company: req.user.company,
-	});
+		owner: req.user.userId,
+	})
+		.populate({
+			path: 'owner',
+			select: 'name email',
+		})
+		.populate({
+			path: 'contact',
+			populate: 'addressId'
+		})
+		.populate({
+			path: 'logo',
+			select: 'url'
+		});
 	if (!result) throw new NotFoundError(id);
+	delete result._doc.password;
 
 	return result;
 };
 
-const updateCompanyProfile = async (req) => {
-	const { id } = req.params;
-	const { companyName, mottoCompany, about, logo, birthday, terms, policy, status, speedtest, watermark, phone, email, address } = req.body;
-	await checkingCompany(id);
+const updateCompany = async (req, id, companyData) => {
+	console.log('token', req.user);
+	const { companyName, email, password, confirmPassword } = companyData;
+	if (password !== confirmPassword) throw new BadRequestError("Password and Confirm Password do not match");
 
-	// cari field name dan id selain dari yang dikirim dari params
+	const companies = await checkingCompany(id);
+	const logos = await checkingImage(companies.logo)
+	console.log('logo', logos)
 	const check = await Companies.findOne({
-		companyName: req.user.company,
+		companyName, email,
+		owner: req.user.userId,
 		_id: { $ne: id },
 	});
-	if (check) throw new DuplicateError();
-
-	// const updateFields = {
-	// 	companyName,
-	// 	email,
-	// 	password,
-	// 	mottoCompany,
-	// 	about,
-	// 	logo,
-	// 	birthday,
-	// 	terms,
-	// 	policy,
-	// 	status,
-	// 	speedtest,
-	// 	watermark,
-	// 	phone, email, address,
-	// };
-
+	console.log('check', check)
+	if (check) throw new DuplicateError(companyName, email);
+	const contacts = await updateContact(companies.contact, req.body)
+	console.log('contacs', contacts)
 	const result = await Companies.findOneAndUpdate(
 		{ _id: id },
-		req.body,
+		{
+			...companyData, owner: req.user.userId, contact: contacts.data._id,
+			logo: logos._id,
+		},
 		{ new: true, runValidators: true }
 	);
-	if (!result) throw new BadRequestError();
-
-	// Update data contact
-	// if (contact && contact.name) {
-	// 	const contactResult = await Contact.findOneAndUpdate(
-	// 		{ _id: result.contact },
-	// 		{ name: contact.name, phone: contact.phone, email: contact.email, address: contact.address },
-	// 		{ new: true, runValidators: true }
-	// 	);
-
-	// 	if (!contactResult) {
-	// 		throw new NotFoundError(`Tidak ada Contact dengan id: ${result.contact}`);
-	// 	}
-	// }
+	if (!result) throw new BadRequestError('Updated Company Data Failed.');
+	delete result._doc.password;
+	// delete result._doc.companies;
+	// delete result._doc.otp;
 
 	return { msg: "Updated Data Successfully", data: result };
 };
 
-const deleteCompany = async (req) => {
-	const { id } = req.params;
-	const result = await Companies.findOne({
-		_id: id,
-		company: req.user.company,
+// const updateCompany = async (req) => {
+// 	// console.log('token', req.user);
+// 	const { id } = req.params;
+// 	const { companyName, email, password, confirmPassword } = req.body;
+// 	if (password !== confirmPassword) throw new BadRequestError("Password and Confirm Password do not match");
+
+// 	const companies = await checkingCompany(id);
+// 	const logos = await checkingImage(companies.logo)
+// 	console.log('logo', logos)
+// 	// cari field name dan id selain dari yang dikirim dari params
+// 	const check = await Companies.findOne({
+// 		companyName, email,
+// 		owner: req.user.userId,
+// 		_id: { $ne: id },
+// 	});
+// 	console.log('check', check)
+// 	if (check) throw new DuplicateError(companyName, email);
+// 	const contacts = await updateContact(companies.contact, req.body)
+// 	console.log('contacs', contacts)
+// 	const result = await Companies.findOneAndUpdate(
+// 		{ _id: id },
+// 		{
+// 			...req.body, owner: req.user.userId, contact: contacts.data._id,
+// 			logo: logos._id,
+// 		},
+// 		{ new: true, runValidators: true }
+// 	);
+// 	if (!result) throw new BadRequestError();
+
+// 	return { msg: "Updated Data Successfully", data: result };
+// };
+
+const deleteCompany = async (id, req) => {
+	if (id === { owner: req.user.userId } || id === req.user.companyId) throw new BadRequestError('You cannot delete yourself.');
+
+	const result = await checkingCompany(id, {
+		owner: req.user.userId,
 	});
-	if (!result) throw new NotFoundError(id);
+	const logos = await checkingImage(result.logo);
+	const contacts = await checkingContact(result.contact)
+
+	await logos.deleteOne();
+	await contacts.deleteOne();
 	await result.deleteOne();
 
-	return result;
+	delete result._doc.password;
+	delete result._doc.companies;
+	delete result._doc.otp;
+
+	return { msg: 'Deleted Successfully', data: result };
 };
 
-const checkingCompany = async (id) => {
-	const result = await Companies.findOne({ _id: id });
+const checkingCompany = async (id, options = {}) => {
+	const query = {
+		_id: id,
+		...options,
+	};
+
+	if (options.excludeId) {
+		query._id = { $ne: id };
+		console.log('duplicate companies false')
+	}
+	const result = await Companies.findOne(query);
 	if (!result) throw new NotFoundError(id);
 	return result;
 };
+
+const changeStatusCompany = async (req) => {
+	const { id } = req.params;
+	const { status } = req.body;
+	if (!['Active', 'Inactive', 'Suspend'].includes(status)) throw new BadRequestError('Status must type is required');
+
+	await checkingCompany(id, {
+		owner: req.user.userId,
+	});
+
+	const result = await Companies.findOneAndUpdate(
+		{ _id: id },
+		{ status, owner: req.user.userId },
+		{ new: true, runValidators: true }
+	)
+	if (!result) throw new BadRequestError('Updated Status Company Failed');
+	delete result._doc.password;
+	delete result._doc.companies;
+	delete result._doc.otp;
+
+	return { msg: `Success! Status ${result.companyName} Changed.`, data: result }
+}
 
 module.exports = {
 	getAllCompanies,
-	getAllCompanies2,
 	createCompany,
 	getOneCompany,
-	updateCompanyProfile,
+	updateCompany,
 	deleteCompany,
 	checkingCompany,
+	changeStatusCompany,
 };

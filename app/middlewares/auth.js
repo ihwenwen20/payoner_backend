@@ -1,7 +1,14 @@
 const { UnauthenticatedError, UnauthorizedError } = require('../errors');
 const { isTokenValid } = require('../utils/jwt');
 const jwt = require('jsonwebtoken');
+const {
+	jwtSecret,
+	jwtExpiration,
+	jwtRefreshTokenExpiration,
+	jwtRefreshTokenSecret,
+} = require('../config');
 const Users = require('../api/v2/users/model');
+const Companies = require('../api/v2/companies/model');
 
 // with cookie
 // const authenticateUser = async (req, res, next) => {
@@ -84,16 +91,86 @@ const authenticateUser = async (req, res, next) => {
 			throw new UnauthenticatedError('Authentication invalid');
 		}
 
-		const payload = isTokenValid({ token });
+		const payload = jwt.verify(token, jwtSecret);
+		// console.log('payload', payload)
 
+		// const companyId = payload.companyId ? payload.companyId[0] : null;
+		// const companiesIds = payload.companies.map(company => company._id);
+		// const userCompanies = await Companies.find({});
+		// console.log('userCompanies', userCompanies)
 		// Attach the user and his permissions to the req object
 		req.user = {
+			id: payload.userId,
+			// username: payload.username,
+			// name: payload.name,
+			// email: payload.email,
+			// role: payload.role,
+			userId: payload.userId,
 			username: payload.username,
+			ownerName: payload.ownerName,
+			ownerEmail: payload.ownerEmail,
+			ownerRole: payload.ownerRole,
+			companyId: payload.companyId,
+			// companyId: companyId,
 			name: payload.name,
 			email: payload.email,
 			role: payload.role,
-			// company: payload.company,
-			id: payload.userId,
+			// companies: userCompanies.map(company => company._id),
+			// companies: payload.companies,
+		};
+
+		next();
+	} catch (error) {
+		next(error);
+	}
+};
+
+const authenticateCompany = async (req, res, next) => {
+	try {
+		let token;
+		// check header
+		const authHeader = req.headers.authorization;
+
+		if (authHeader && authHeader.startsWith('Bearer')) {
+			token = authHeader.split(' ')[1];
+		}
+
+		// console.log('token');
+		// console.log(token);
+
+		if (!token) {
+			throw new UnauthenticatedError('Authentication invalid');
+		}
+
+		const payload = isTokenValid({ token });
+		console.log('payload', payload)
+
+		const isCompany = !!payload.companyId;
+
+		if (isCompany) {
+			req.isCompany = true;
+		}
+
+		// Attach the user and his permissions to the req object
+		// req.company = {
+		// 	id: payload.companyId,
+		// 	name: payload.name,
+		// 	email: payload.email,
+		// 	role: payload.role,
+		// 	owner: payload.owner,
+		// };
+
+		req.user = {
+			userId: payload.userId,
+			username: payload.username,
+			ownerName: payload.ownerName,
+			ownerEmail: payload.ownerEmail,
+			ownerRole: payload.ownerRole,
+			companyId: payload.companyId,
+			name: payload.name,
+			email: payload.email,
+			role: payload.role,
+			owner: payload.owner,
 		};
 
 		next();
@@ -106,6 +183,30 @@ const authorizeRoles = (...roles) => {
 	return (req, res, next) => {
 		if (!roles.includes(req.user.role)) throw new UnauthorizedError('Unauthorized to access this route');
 		next();
+	};
+};
+
+// const authorizeRolesCompany = (...roles) => {
+// 	return (req, res, next) => {
+// 		if (!roles.includes(req.user.role)) throw new UnauthorizedError('Unauthorized to access this route');
+// 		next();
+// 	};
+// };
+
+const authorizeRolesCompany = (...roles) => {
+	return (req, res, next) => {
+			if (req.isCompany) {
+					// Company-specific authorization logic
+					if (!roles.includes(req.user.ownerRole)) {
+							throw new UnauthorizedError('Unauthorized to access this route');
+					}
+			} else {
+					// User-specific authorization logic
+					if (!roles.includes(req.user.role)) {
+							throw new UnauthorizedError('Unauthorized to access this route');
+					}
+			}
+			next();
 	};
 };
 
@@ -140,4 +241,4 @@ const authenticateCustomer = async (req, res, next) => {
 	}
 };
 
-module.exports = { authenticateUser, authorizeRoles, authenticateCustomer };
+module.exports = { authenticateUser, authorizeRoles, authenticateCustomer, authenticateCompany, authorizeRolesCompany };

@@ -1,5 +1,5 @@
 const { signinUser, signupUser, logoutUser, activateUser, getRefreshToken,
-	requestPasswordReset, resetPassword } = require('../../../services/mongoose-v2/auth');
+	requestPasswordReset, resetPassword, signinCompanies } = require('../../../services/mongoose-v2/auth');
 const { StatusCodes } = require('http-status-codes');
 
 const register = async (req, res, next) => {
@@ -16,6 +16,7 @@ const register = async (req, res, next) => {
 const login = async (req, res, next) => {
 	try {
 		const {
+			msg,
 			accessToken,
 			refreshToken,
 			name,
@@ -24,6 +25,7 @@ const login = async (req, res, next) => {
 			avatar } = await signinUser(req, res);
 
 		res.status(StatusCodes.CREATED).json({
+			msg,
 			accessToken,
 			refreshToken,
 			name,
@@ -36,6 +38,59 @@ const login = async (req, res, next) => {
 	}
 };
 
+const loginCompany = async (req, res, next) => {
+	try {
+		const {
+			msg,
+			accessToken,
+			refreshToken,
+			companyId,
+			// name,
+			// email,
+			// role,
+			// owner,
+			// logo
+			entityName,
+			entityEmail,
+			entityRole,
+			entityOwner,
+			entityLogo,
+			userId,
+			username,
+			userName,
+			userRole,
+			userEmail,
+			userCompanies,
+			userAvatar,
+		} = await signinCompanies(req, res);
+
+		res.status(StatusCodes.CREATED).json({
+			msg,
+			accessToken,
+			refreshToken,
+			companyId,
+			// name,
+			// email,
+			// role,
+			// owner,
+			// logo
+			entityName,
+			entityEmail,
+			entityRole,
+			entityOwner,
+			entityLogo,
+			userId,
+			username,
+			userName,
+			userRole,
+			userEmail,
+			userCompanies,
+			userAvatar,
+		});
+	} catch (err) {
+		next(err);
+	}
+};
 
 const activeUser = async (req, res, next) => {
 	try {
@@ -96,4 +151,4 @@ const resetP = async (req, res, next) => {
 	}
 };
 
-module.exports = { login, register, showMe, activeUser, logout, forgotPassword, resetP };
+module.exports = { login, register, showMe, activeUser, logout, forgotPassword, resetP, loginCompany };

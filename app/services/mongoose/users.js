@@ -53,7 +53,7 @@ const createCompany = async (req, res) => {
 	const { avatar, name, email, role, password, confirmPassword, gender, birthday, status, companyName, phone, address } = req.body;
 
 	if (!name || !companyName || !email || !password || !confirmPassword) throw new BadRequestError("Please provide all required fields");
-	if (password !== confirmPassword) throw new BadRequestError("Password and confirm password do not match");
+	if (password !== confirmPassword) throw new BadRequestError("Password and Confirm Password do not match");
 
 	const existingUser = await Users.findOne({ email });
 	if (existingUser) throw new BadRequestError(`User with this email: ${email} already exists`);

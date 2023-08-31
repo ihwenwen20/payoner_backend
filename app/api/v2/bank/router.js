@@ -1,24 +1,23 @@
 const express = require('express');
 const router = express();
 
-const { create, index, indexInfinite, find, update, destroy } = require('./controller');
+const { create, index,  find, update, destroy } = require('./controller');
 
 const {
-	authenticateUser,
-	authorizeRoles,
+	authenticateCompany,
+	authorizeRolesCompany,
 } = require('../../../middlewares/auth');
 
-// router.get('/bank', authenticateUser, authorizeRoles('company'), index);
-// router.post('/bank', authenticateUser, authorizeRoles('company'), create);
-// router.get('/bank/:id', authenticateUser, authorizeRoles('company'), find);
-// router.put('/bank/:id', authenticateUser, authorizeRoles('company'), update);
-// router.delete('/bank/:id', authenticateUser, authorizeRoles('company'), destroy);
+router.get('/bank', authenticateCompany, authorizeRolesCompany('Developer', 'Owner', 'Company', 'Admin'), index);
+router.post('/bank', authenticateCompany, authorizeRolesCompany('Developer', 'Owner', 'Company', 'Admin'), create);
+router.get('/bank/:id', authenticateCompany, authorizeRolesCompany('Developer', 'Owner', 'Company', 'Admin'), find);
+router.put('/bank/:id', authenticateCompany, authorizeRolesCompany('Developer', 'Owner', 'Company', 'Admin'), update);
+router.delete('/bank/:id', authenticateCompany, authorizeRolesCompany('Developer', 'Owner', 'Company', 'Admin'), destroy);
 
-router.get('/bank', index);
-router.get('/bank/infinite', indexInfinite);
-router.post('/bank', create);
-router.get('/bank/:id', find);
-router.put('/bank/:id', update);
-router.delete('/bank/:id', destroy);
+// router.get('/bank', index);
+// router.post('/bank', create);
+// router.get('/bank/:id', find);
+// router.put('/bank/:id', update);
+// router.delete('/bank/:id', destroy);
 
 module.exports = router;

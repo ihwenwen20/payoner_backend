@@ -2,8 +2,8 @@ const { StatusCodes } = require('http-status-codes');
 const DuplicateError = require('../errors/duplicateError');
 
 const errorHandlerMiddleware = (err, req, res, next) => {
-	console.log('err');
-	console.log(err.message);
+	console.log('err from middleware', err);
+	console.log('err.message from middleware', err.message);
 
 	let customError = {
 		// set default
@@ -30,6 +30,11 @@ const errorHandlerMiddleware = (err, req, res, next) => {
 	if (err.name === 'CastError') {
 		customError.msg = `Value item with id : ${err.value}, Not found`;
 		customError.statusCode = 404;
+	}
+
+	if (err.name === 'TokenExpiredError' || err.message === 'jwt expired') {
+		customError.msg = 'AccessToken has expired. Please, login again...';
+		customError.statusCode = StatusCodes.UNAUTHORIZED;
 	}
 
 	if (err instanceof DuplicateError) {

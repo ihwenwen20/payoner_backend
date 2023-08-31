@@ -1,0 +1,21 @@
+Dari kode yang Anda berikan, terlihat bahwa dbProduct.inventory dikurangkan pada saat iterasi item dari cartItems. Jika Anda ingin menghindari pengurangan langsung pada dbProduct.inventory sebelum order selesai diproses, Anda perlu melakukan beberapa perubahan dalam cara pengurangan stok.
+
+Salah satu cara untuk mengatasi ini adalah dengan menciptakan transaksi khusus untuk proses pembelian. Pada transaksi ini, Anda akan mengurangkan stok secara sementara, dan hanya mengonfirmasi pengurangan stok tersebut setelah order berhasil diproses. Jika terjadi kegagalan atau pembatalan, Anda dapat membatalkan pengurangan stok.
+
+Berikut adalah panduan singkat mengenai bagaimana Anda dapat melakukannya:
+
+Buat Transaksi Stok:
+
+Saat membuat order, buatlah transaksi stok baru dengan status 'Pending' atau 'Reserved'.
+Transaksi ini akan mencatat pengurangan stok secara sementara.
+Proses Order:
+
+Setelah order berhasil diproses dan dibayar, Anda dapat mengubah status transaksi stok menjadi 'Confirmed' atau sejenisnya.
+Rollback Stok (Opsional):
+
+Jika terjadi kegagalan atau pembatalan order, Anda dapat membatalkan transaksi stok yang sudah dibuat, sehingga stok akan kembali seperti semula.
+Tambahkan Logika Transaksi Stok:
+
+Anda perlu membuat model khusus untuk transaksi stok yang mencatat perubahan stok pada setiap produk.
+Anda juga perlu mengubah kode Anda untuk mencatat transaksi stok saat pembelian dilakukan.
+Dengan pendekatan ini, Anda dapat menghindari pengurangan langsung pada dbProduct.inventory sebelum order selesai diproses. Transaksi stok akan memastikan bahwa stok yang sudah dipesan tetap direserve dan akurat sepanjang proses.

@@ -1,17 +1,13 @@
 const Bank = require('../../api/v2/bank/model');
 const { NotFoundError, BadRequestError, DuplicateError } = require('../../errors');
-const { paginateData, infiniteScrollData } = require('../../utils/paginationUtils'); // Sesuaikan dengan lokasi utilitas Anda
+const { paginate } = require('../../utils/paginationUtils');
 
 const getAllBanks = async (req, queryFields, search, page, size, filter) => {
-	const result = await paginateData(Bank, queryFields, search, page, size, filter);
-	const populateOptions = [];
-
-	await Bank.populate(result.data, populateOptions);
-	return result;
-};
-
-const getAllBanks2 = async (req, queryFields, search, page, size, filter) => {
-	const result = await infiniteScrollData(Bank, queryFields, search, page, size, filter);
+	// console.log('token company', req.user)
+	console.log('token company', req.company)
+	// let condition = {};
+	let condition = { publisher: req.user.companyId };
+	const result = await paginate(Bank, queryFields, search, page, size, filter = condition);
 	const populateOptions = [];
 
 	await Bank.populate(result.data, populateOptions);
@@ -19,13 +15,20 @@ const getAllBanks2 = async (req, queryFields, search, page, size, filter) => {
 };
 
 const createBank = async (req) => {
-	const { ownerName, bankName, noRekening } = req.body
-	if (!ownerName || !bankName || !noRekening) throw new NotFoundError();
+	console.log('token company', req.company)
+	const { bankName, noRekening } = req.body
+	if (!bankName || !noRekening) throw new NotFoundError(ownerName, bankName, noRekening);
 
-	const check = await Bank.findOne({ ownerName, bankName, noRekening, });
-	if (check) throw new DuplicateError();
+	const check = await Bank.findOne({
+		bankName, noRekening,
+		publisher: req.user.companyId
+	});
+	if (check) throw new DuplicateError(bankName + ' ' + noRekening);
 
-	const result = await Bank.create({ ...req.body });
+	const result = await Bank.create({
+		...req.body,
+		publisher: req.user.companyId
+	});
 	if (!result) throw new BadRequestError();
 
 	return { msg: "Bank created successfully", data: result };
@@ -33,54 +36,61 @@ const createBank = async (req) => {
 
 const getOneBank = async (req) => {
 	const { id } = req.params;
-
 	const result = await Bank.findOne({
 		_id: id,
+		publisher: req.user.companyId
+	}).populate({
+		path: 'publisher',
+		select: 'companyName email logo',
 	});
 	if (!result) throw new NotFoundError(id);
 
 	return result;
 };
 
-const updateBank = async (req) => {
-	const { id } = req.params;
-	const { ownerName, bankName, noRekening } = req.body
+const updateBank = async (req, id, bankData) => {
+	const { bankName, noRekening } = bankData
 
 	await checkingBank(id);
-	// cari Bank dengan field name dan id selain dari yang dikirim dari params
 	const check = await Bank.findOne({
-		ownerName, bankName, noRekening,
+		bankName, noRekening,
+		publisher: req.user.companyId,
 		_id: { $ne: id },
 	});
-	if (check) throw new DuplicateError();
+	if (check) throw new DuplicateError(bankName, noRekening);
 
 	const result = await Bank.findOneAndUpdate(
 		{ _id: id },
-		req.body,
+		{
+			...bankData, publisher: req.user.companyId
+		},
 		{ new: true, runValidators: true }
 	);
-	if (!result) throw new BadRequestError(id);
+	if (!result) throw new BadRequestError('Update Bank Data Failed.');
 
-	return { msg: "Updated Data Successfully", data: result };
+	return { msg: "Updated Data Successfully.", data: result };
 };
 
 const deleteBank = async (req) => {
 	const { id } = req.params;
-	const result = await checkingBank(id)
+	const result = await Bank.findOne({
+		_id: id,
+		publisher: req.user.companyId
+	});
+	if (!result) throw new NotFoundError(id);
 	await result.deleteOne();
 
-	return { msg: "Deleted Successfully" }
+	return { msg: 'Deleted Successfully', data: result };
 };
 
 const checkingBank = async (id) => {
 	const result = await Bank.findOne({ _id: id });
-	if (!result) throw new NotFoundError(id);
+	if (!result) throw new BadRequestError(`Bank with id: ${id}, was not found`);
 	return result;
 };
 
 module.exports = {
 	getAllBanks,
-	getAllBanks2,
 	createBank,
 	getOneBank,
 	updateBank,

@@ -1,29 +1,29 @@
 const nodemailer = require('nodemailer');
-const {gmail, password, emailHost, emailPort, emailCustom,emailPassword} = require('../../config');
+const { gmail, password, emailHost, emailPort, emailCustom, emailPassword } = require('../../config');
 const Mustache = require('mustache');
 const fs = require('fs');
 
 // via email custom
-const transporter = nodemailer.createTransport({
-	host: emailHost,
-	port: emailPort,
-	secure: false, // true for 465, false for other ports
-	auth: {
-		user: emailCustom,
-		pass: emailPassword,
-	},
-});
-
-// via smtp gmail
 // const transporter = nodemailer.createTransport({
-// 	host: 'smtp.gmail.com',
-// 	port: 587,
+// 	host: emailHost,
+// 	port: emailPort,
 // 	secure: false, // true for 465, false for other ports
 // 	auth: {
-// 		user: gmail,
-// 		pass: password,
+// 		user: emailCustom,
+// 		pass: emailPassword,
 // 	},
 // });
+
+// via smtp gmail
+const transporter = nodemailer.createTransport({
+	host: 'smtp.gmail.com',
+	port: 587,
+	secure: false, // true for 465, false for other ports
+	auth: {
+		user: gmail,
+		pass: password,
+	},
+});
 
 const otpMail = async (email, data) => {
 	try {
@@ -60,4 +60,4 @@ const orderMail = async (email, data) => {
 	}
 };
 
-module.exports = {otpMail};
+module.exports = { otpMail };

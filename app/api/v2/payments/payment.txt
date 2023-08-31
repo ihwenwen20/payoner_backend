@@ -1,0 +1,144 @@
+// server.js
+const express = require('express');
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+const paymentGateway = require('./paymentGateway'); // Modul gateway yang akan kita buat
+
+const app = express();
+app.use(bodyParser.json());
+
+mongoose.connect('mongodb://localhost/payment_gateway_demo', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+app.post('/create-payment', async (req, res) => {
+  try {
+    const { provider, amount } = req.body;
+
+    // Panggil payment gateway untuk membuat pembayaran
+    const paymentResult = await paymentGateway.createPayment(provider, amount);
+
+    return res.json({ message: 'Payment created successfully', paymentResult });
+  } catch (error) {
+    console.error('Error creating payment:', error);
+    return res.status(500).json({ message: 'Failed to create payment' });
+  }
+});
+
+app.listen(3000, () => {
+  console.log('Server is running on port 3000');
+});
+
+// paymentGateway.js
+const midtransGateway = require('./midtransGateway'); // Modul untuk Midtrans
+const tripayGateway = require('./tripayGateway'); // Modul untuk TriPay
+const xenditGateway = require('./xenditGateway'); // Modul untuk Xendit
+
+// Fungsi untuk membuat pembayaran berdasarkan provider
+const createPayment = async (provider, amount) => {
+  try {
+    let paymentResult;
+
+    if (provider === 'midtrans') {
+      paymentResult = await midtransGateway.createPayment(amount);
+    } else if (provider === 'tripay') {
+      paymentResult = await tripayGateway.createPayment(amount);
+    } else if (provider === 'xendit') {
+      paymentResult = await xenditGateway.createPayment(amount);
+    }
+
+    return paymentResult;
+  } catch (error) {
+    throw error;
+  }
+};
+
+module.exports = {
+  createPayment,
+};
+
+
+// midtransGateway.js
+const axios = require('axios');
+
+const MIDTRANS_BASE_URL = 'https://api.midtrans.com/v2';
+
+const createPayment = async (amount) => {
+  try {
+    const response = await axios.post(`${MIDTRANS_BASE_URL}/charge`, {
+      payment_type: 'credit_card',
+      transaction_details: {
+        gross_amount: amount,
+        order_id: 'ORDER_ID',
+      },
+    }, {
+      headers: {
+        Authorization: 'Basic YOUR_MIDTRANS_AUTH_KEY',
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+module.exports = {
+  createPayment,
+};
+
+
+// tripayGateway.js
+const axios = require('axios');
+
+const TRIPAY_BASE_URL = 'https://api.tripay.co.id/v2';
+
+const createPayment = async (amount) => {
+  try {
+    const response = await axios.post(`${TRIPAY_BASE_URL}/create-payment`, {
+      amount,
+      order_id: 'ORDER_ID',
+    }, {
+      headers: {
+        'Authorization': 'Bearer YOUR_TRIPAY_API_KEY',
+        'Content-Type': 'application/json',
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+module.exports = {
+  createPayment,
+};
+
+
+// xenditGateway.js
+const axios = require('axios');
+
+const XENDIT_BASE_URL = 'https://api.xendit.co';
+
+const createPayment = async (amount) => {
+  try {
+    const response = await axios.post(`${XENDIT_BASE_URL}/v2/invoices`, {
+      external_id: 'ORDER_ID',
+      amount,
+    }, {
+      headers: {
+        Authorization: 'Basic YOUR_XENDIT_SECRET_KEY',
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+module.exports = {
+  createPayment,
+};

@@ -14,7 +14,7 @@ const { createImages } = require('./images');
 // 	if (!name || !company || !email || !password || !confirmPassword) {
 // 		throw new BadRequestError("Please provide all required fields");
 // 	}
-// 	if (password !== confirmPassword) throw new BadRequestError("Password and confirm password do not match");
+// 	if (password !== confirmPassword) throw new BadRequestError("Password and Confirm Password do not match");
 
 // 	const existingUser = await Users.findOne({ email });
 // 	if (existingUser) {
@@ -57,7 +57,7 @@ const signupUser = async (req, res) => {
 	if (!name || !companyName || !email || !password || !confirmPassword) {
 		throw new BadRequestError("Please provide all required fields");
 	}
-	if (password !== confirmPassword) throw new BadRequestError("Password and confirm password do not match");
+	if (password !== confirmPassword) throw new BadRequestError("Password and Confirm Password do not match");
 
 	const existingUser = await Users.findOne({ email });
 	if (existingUser) throw new BadRequestError(`User with this email: ${email} already exists`);

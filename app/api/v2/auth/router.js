@@ -9,6 +9,7 @@ const {
 	forgotPassword,
 	resetP,
 	changeP,
+	loginCompany,
  } = require('./controller');
 
 router.post('/signup', register);
@@ -19,5 +20,6 @@ router.put('/activated', activeUser);
 router.post('/forgotPassword', forgotPassword);
 router.post('/resetPassword/:refreshToken/:email', resetP);
 // router.post('/changePassword/:refreshToken/:email', changeP);
+router.post('/login', loginCompany);
 
 module.exports = router;

@@ -75,9 +75,9 @@ const update = async (req, res, next) => {
 
 const destroy = async (req, res, next) => {
 	try {
-		const { msg } = await deletePayment(req);
+		const { msg, data } = await deletePayment(req);
 		res.status(StatusCodes.OK).json({
-			msg
+			msg, data
 		});
 	} catch (err) {
 		next(err);

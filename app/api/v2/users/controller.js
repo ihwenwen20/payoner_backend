@@ -1,6 +1,5 @@
 const {
 	getAllUsers,
-	getAllUsers2,
 	createUser,
 	getDetailUser,
 	updateUser,
@@ -17,24 +16,6 @@ const index = async (req, res, next) => {
 		const queryFields = ['username', 'name', 'email', 'status'];
 
 		const result = await getAllUsers(req, queryFields, search, page, size);
-		res.status(StatusCodes.OK).json(result);
-	} catch (err) {
-		next(err);
-	}
-};
-
-const indexInfinite = async (req, res, next) => {
-	try {
-		let page = parseInt(req.query.page) || 1;
-		const size = parseInt(req.query.size) || 10;
-		const search = req.query.search_query || "";
-		const queryFields = ['username', 'name', 'email', 'status'];
-
-		// const filter = { company: req.user.company };
-
-		// const result = await getAllUsers2(req, queryFields, search, page, size, filter);
-
-		const result = await getAllUsers2(req, queryFields, search, page, size);
 		res.status(StatusCodes.OK).json(result);
 	} catch (err) {
 		next(err);
@@ -77,9 +58,9 @@ const update = async (req, res, next) => {
 
 const destroy = async (req, res, next) => {
 	try {
-		const { msg } = await deleteUser(req);
+		const { msg, data } = await deleteUser(req);
 		res.status(StatusCodes.OK).json({
-			msg
+			msg, data
 		});
 	} catch (err) {
 		next(err);
@@ -88,21 +69,26 @@ const destroy = async (req, res, next) => {
 
 const changeStatus = async (req, res, next) => {
 	try {
-		const result = await changeStatusUser(req);
+		const { msg, data } = await changeStatusUser(req);
 		res.status(StatusCodes.OK).json({
-			data: result,
+			msg, data
 		});
 	} catch (err) {
 		next(err);
 	}
 };
 
+const showCurrentUser = async (req, res) => {
+	console.log('req', req.user)
+	res.status(StatusCodes.OK).json({ user: req.user });
+};
+
 module.exports = {
 	index,
-	indexInfinite,
 	create,
 	find,
 	update,
 	destroy,
 	changeStatus,
+	showCurrentUser,
 };

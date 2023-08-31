@@ -43,7 +43,7 @@ const userSchema = new mongoose.Schema(
 		contact: {
 			type: mongoose.Types.ObjectId,
 			ref: 'Contact',
-			// required:true
+			// required: true
 		},
 		role: {
 			type: String,
@@ -53,7 +53,7 @@ const userSchema = new mongoose.Schema(
 		},
 		status: {
 			type: String,
-			enum: ['Active', 'Inactive', 'Pending', 'Suspend'],
+			enum: ['Active', 'Inactive', 'Pending', 'Suspend', 'Free'],
 			default: 'Inactive',
 			required: true
 		},
@@ -65,8 +65,16 @@ const userSchema = new mongoose.Schema(
 			type: String,
 			trim: true,
 		},
+		numOfCompanies: {
+			type: Number,
+			default: 0,
+		},
+		// companies: {
+		// 	type: mongoose.Types.ObjectId,
+		// 	ref: 'Company',
+		// },
 		companies: [{
-			type: mongoose.Types.ObjectId,
+			type: mongoose.Schema.Types.ObjectId,
 			ref: 'Company',
 		}],
 		otp: {
@@ -102,6 +110,18 @@ const userSchema = new mongoose.Schema(
 // 	(attr) => `${attr.value} already exist`
 // );
 
+// userSchema.pre('save', async function (next) {
+//   if (this.isNew) {
+//     const newCompany = new Company({
+//       companyName: 'Default Company',
+//     });
+//     const savedCompany = await newCompany.save();
+//     this.companies.push(savedCompany._id);
+//   }
+
+// 	next();
+// });
+
 userSchema.pre('save', async function (next) {
 	const User = this;
 	if (User.isModified('password')) {
@@ -124,5 +144,16 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 		throw new Error('Failed to compare password');
 	}
 };
+
+// userSchema.virtual('companies', {
+// 	ref: 'Company',
+// 	localField: '_id',
+// 	foreignField: 'owner',
+// 	// justOne: false,
+// });
+
+// userSchema.pre('remove', async function (next) {
+// 	await this.model('Company').deleteMany({ owner: this._id });
+// });
 
 module.exports = mongoose.model('User', userSchema);

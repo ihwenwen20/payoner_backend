@@ -1,0 +1,50 @@
+Mengingat kembali dasar array..
+
+1. Bagaimana Cara Memeriksa Apakah Suatu Array Kosong atau Tidak dengan .length?
+const arr = []
+arr.length
+if (arr.length === 0) { console.log("Array is empty!") }
+atau
+if (!arr.length) { console.log("Array is empty!") }
+
+Gunakan juga method Array.isArray() untuk memastikan tipe data dari variabel yang kita periksa adalah benar sebuah array.
+if (Array.isArray(arr) && !arr.length) { console.log("Array is an array, and is empty!") }
+
+
+2. Periksa apakah suatu Item ada dalam Array di JavaScript – JS Berisi dengan Array.includes()?
+Anda dapat menggunakan includes()metode dalam JavaScript untuk memeriksa apakah suatu item ada dalam array.
+Anda juga dapat menggunakannya untuk memeriksa apakah ada substring di dalam string.
+array.includes(item, fromIndex)
+
+const nums = [ 1, 3, 5, 7];
+console.log(nums.includes(3));
+// true
+
+const bio = "I am a web developer";
+console.log(bio.includes("web"));
+// true
+
+let bio = "I am a web developer";
+console.log(bio.includes("web",9));
+// false
+Kami mendapatkannya false karena indeks 9 adalah e di "web".
+
+
+
+3.
+const mongoose = require('mongoose');
+
+// Misalnya, array companies berisi banyak ID perusahaan dalam bentuk mongoose.Types.ObjectId
+const companies = [mongoose.Types.ObjectId('id1'), mongoose.Types.ObjectId('id2'), /* ... */];
+
+// Parameter yang ingin Anda cocokkan, juga dalam bentuk mongoose.Types.ObjectId
+const parameter = mongoose.Types.ObjectId('id2');
+
+// Mencari ID yang sesuai dengan parameter menggunakan metode .find()
+const foundId = companies.find(id => id.equals(parameter));
+
+if (foundId) {
+    console.log('ID found:', foundId);
+} else {
+    console.log('ID not found');
+}

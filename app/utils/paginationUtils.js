@@ -1,32 +1,58 @@
-// const paginateData = async (model, query, page, size) => {
-// 	const offset = size * page;
+const { NotFoundError } = require('../errors')
 
-// 	const totalRows = await model.countDocuments(query);
-// 	const totalPage = Math.ceil(totalRows / size);
+const paginate = async (model, queryFields, search, page, size, filter, lastId) => {
+	if (search) {
+		page = 1;
+	}
 
-// 	const result = await model.find(query)
-// 		.skip(offset)
-// 		.limit(size)
-// 		.sort({ _id: -1 });
+	const skip = (page - 1) * size; const query = { ...filter };
 
-// 	return {
-// 		data: result,
-// 		pagination: {
-// 			page,
-// 			size,
-// 			totalRows,
-// 			totalPage,
-// 		},
-// 	};
-// };
-const paginateData = async (model, queryFields, search, page, size, additionalFilters) => {
+	if (search) {
+		const searchQuery = queryFields.map(field => ({ [field]: { $regex: search, $options: "i" } }));
+		query['$or'] = searchQuery;
+	}
+
+	const totalRows = await model.countDocuments(query);
+	// if (search === 0) throw new NotFoundError(search);
+	if (search && totalRows === 0) throw new NotFoundError(search);
+	const totalPage = Math.ceil(totalRows / size);
+
+	// let sortOptions = { _id: 1 }; // sorting by _id in ascending order
+	let sortOptions = { _id: -1 }; // sorting by _id in descending order
+	if (lastId < 1) {
+		sortOptions = { name: 1 };
+	}
+
+	const result = await model.find(query)
+		.skip(skip)
+		.limit(size)
+		.sort(sortOptions);
+
+	const paginationInfo = {
+		totalRows,
+		page,
+		size,
+		totalPage,
+		filter,
+		sortOptions
+	};
+
+	return {
+		data: result,
+		search,
+		pagination: paginationInfo,
+		lastId: result.length ? result[result.length - 1].id : 0,
+		hasMore: result.length >= size ? true : false
+	};
+};
+
+const paginateData = async (model, queryFields, search, page, size, filter) => {
 	if (search) {
 		page = 1;
 	}
 	// const offset = size * page;
 	const offset = size * (page - 1);
-	const query = { ...additionalFilters }; // Copy additional filters
-
+	const query = { ...filter };
 
 	// const query = {};
 	if (search) {
@@ -54,50 +80,16 @@ const paginateData = async (model, queryFields, search, page, size, additionalFi
 	};
 };
 
-// Fungsi util untuk infinite scroll
-// const infiniteScrollData = async (model, queryField, search, page, size) => {
-// 	if (search) {
-// 		// Jika terdapat parameter pencarian, atur halaman kembali ke 1
-// 		page = 1;
-// 	}
-
-// 	const skip = (page - 1) * size;
-
-// 	const query = {};
-// 	if (search) {
-// 		query[queryField] = { $regex: search, $options: "i" };
-// 	}
-// 	// const skip = (page - 1) * size;
-
-// 	const totalRows = await model.countDocuments(query);
-// 	const totalPage = Math.ceil(totalRows / size);
-// 	const result = await model.find(query)
-// 		.skip(skip)
-// 		.limit(size)
-
-// 	return {
-// 		data: result,
-// 		// totalRows,
-// 		// page,
-// 		// size,
-// 		// totalPage,
-// 		search,
-// 		pagination: {
-// 			totalRows,
-// 			page,
-// 			size,
-// 			totalPage,
-// 		},
-// 	};
-// };
 const infiniteScrollData = async (model, queryFields, search, page, size) => {
+
 	if (search) {
 		page = 1;
 	}
 
 	const skip = (page - 1) * size;
 
-	const query = {};
+	// const query = {};
+	const query = { ...filter };
 	if (search) {
 		const searchQuery = queryFields.map(field => ({ [field]: { $regex: search, $options: "i" } }));
 		query['$or'] = searchQuery;
@@ -118,13 +110,38 @@ const infiniteScrollData = async (model, queryFields, search, page, size) => {
 			size,
 			totalPage,
 		},
+		// filter
 	};
 };
 
+
 module.exports = {
 	paginateData,
-	infiniteScrollData
+	infiniteScrollData,
+	paginate
 };
+
+// const paginateData = async (model, query, page, size) => {
+// 	const offset = size * page;
+
+// 	const totalRows = await model.countDocuments(query);
+// 	const totalPage = Math.ceil(totalRows / size);
+
+// 	const result = await model.find(query)
+// 		.skip(offset)
+// 		.limit(size)
+// 		.sort({ _id: -1 });
+
+// 	return {
+// 		data: result,
+// 		pagination: {
+// 			page,
+// 			size,
+// 			totalRows,
+// 			totalPage,
+// 		},
+// 	};
+// };
 
 /**!SECTION
  * Contoh implementasi paginate

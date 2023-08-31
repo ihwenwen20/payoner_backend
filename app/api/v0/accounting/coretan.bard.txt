@@ -1,0 +1,72 @@
+// Model untuk tagihan
+const TagihanModel = mongoose.model('Tagihan', {
+  id: { type: mongoose.Types.ObjectId, required: true },
+  tanggal: { type: Date, required: true },
+  jumlah: { type: Number, required: true },
+  status: { type: String, required: true },
+});
+
+// Model untuk pemasukan
+const PemasukanModel = mongoose.model('Pemasukan', {
+  id: { type: mongoose.Types.ObjectId, required: true },
+  tanggal: { type: Date, required: true },
+  jumlah: { type: Number, required: true },
+  sumber: { type: String, required: true },
+});
+
+// Model untuk pengeluaran
+const PengeluaranModel = mongoose.model('Pengeluaran', {
+  id: { type: mongoose.Types.ObjectId, required: true },
+  tanggal: { type: Date, required: true },
+  jumlah: { type: Number, required: true },
+  tujuan: { type: String, required: true },
+});
+
+// Relasi antara model-model
+
+// Relasi one-to-many antara model `OrderModel` dan model `InvoiceModel`
+TagihanModel.belongsTo(OrderModel, {
+  foreignKey: 'orderId',
+  required: true,
+});
+
+// Relasi many-to-many antara model `TransactionHistoryModel` dan model `TagihanModel`, `PemasukanModel`, dan `PengeluaranModel`
+TransactionHistoryModel.belongsToMany(TagihanModel, {
+  through: 'transactionHistoryTagihan',
+  foreignKey: 'transactionId',
+  otherKey: 'tagihanId',
+});
+
+TransactionHistoryModel.belongsToMany(PemasukanModel, {
+  through: 'transactionHistoryPemasukan',
+  foreignKey: 'transactionId',
+  otherKey: 'pemasukanId',
+});
+
+TransactionHistoryModel.belongsToMany(PengeluaranModel, {
+  through: 'transactionHistoryPengeluaran',
+  foreignKey: 'transactionId',
+  otherKey: 'pengeluaranId',
+});
+
+// Membuat tagihan
+const tagihan = new TagihanModel({
+  tanggal: new Date(),
+  jumlah: 100000,
+  status: 'belum dibayar',
+});
+
+tagihan.save();
+
+// Membaca tagihan
+const tagihan = TagihanModel.findOne({ id: '5f5730000000000000000001' });
+
+console.log(tagihan);
+
+// Memperbarui tagihan
+tagihan.status = 'lunas';
+
+tagihan.save();
+
+// Menghapus tagihan
+TagihanModel.deleteOne({ id: '5f5730000000000000000001' });

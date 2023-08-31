@@ -16,7 +16,7 @@ const createImages = async (req) => {
 			: 'images/avatar/default.jpeg',
 	});
 
-	return result;
+	return { msg: "Success! Image Uploaded.", data: result };
 };
 
 // 2. Cara 2
@@ -79,6 +79,7 @@ const checkingImage = async (id) => {
 // 	});
 // };
 
-module.exports = { createImages, checkingImage,
+module.exports = {
+	createImages, checkingImage,
 	// updateImages, updateImagesWithFile
 };

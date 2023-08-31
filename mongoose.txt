@@ -1,0 +1,63 @@
+Di bawah ini adalah beberapa operator kueri yang umum digunakan dalam Mongoose:
+
+Comparison Operators (Operator Perbandingan):
+
+$eq: Sama dengan
+$ne: Tidak sama dengan
+$gt: Lebih besar dari
+$lt: Lebih kecil dari
+$gte: Lebih besar dari atau sama dengan
+$lte: Lebih kecil dari atau sama dengan
+Logical Operators (Operator Logika):
+
+$and: Logika AND
+$or: Logika OR
+$not: Logika NOT
+$nor: Tidak ada yang cocok dengan
+Element Operators (Operator Elemen):
+
+$exists: Ada dalam dokumen
+$type: Jenis tipe data
+Array Operators (Operator Array):
+
+$in: Ada dalam array
+$nin: Tidak ada dalam array
+$all: Semua elemen cocok
+$elemMatch: Setidaknya satu elemen cocok dengan kondisi
+Regular Expression Operators (Operator Ekspresi Reguler):
+
+$regex: Cocok dengan ekspresi reguler
+Text Search Operator (Operator Pencarian Teks):
+
+$text: Pencarian teks penuh
+Geospatial Operators (Operator Geospasial):
+
+$geoWithin: Titik dalam area tertentu
+$geoIntersects: Titik intersect dengan area tertentu
+$near: Titik dekat dengan lokasi tertentu
+$nearSphere: Titik dekat dengan lokasi tertentu dalam bentuk bola
+Aggregate Operators (Operator Agregasi):
+
+$group: Grupkan hasil berdasarkan kriteria tertentu
+$match: Saring hasil berdasarkan kriteria tertentu
+$project: Proyeksikan kolom tertentu
+$sort: Urutkan hasil
+$limit: Batasi jumlah hasil
+$skip: Lewatkan hasil tertentu
+Dan masih banyak lagi.
+
+Penting untuk dicatat bahwa operator-operator ini digunakan dalam metode kueri Mongoose seperti .find(), .findOne(), dan lain-lain. Misalnya:
+
+javascript
+Copy code
+const User = mongoose.model('User', userSchema);
+
+// Contoh penggunaan operator kueri
+User.find({ age: { $gte: 18 } }) // Temukan pengguna dengan usia 18 tahun atau lebih
+    .exec((err, users) => {
+        if (err) {
+            console.error(err);
+        } else {
+            console.log(users);
+        }
+    });

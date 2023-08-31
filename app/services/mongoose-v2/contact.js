@@ -1,27 +1,15 @@
 const Contact = require('../../api/v2/contacts/model');
 const Address = require('../../api/v2/address/model');
-const { checkingAddress } = require('./address')
+const { checkingAddress, createAddress, updateAddress } = require('./address')
 const { NotFoundError, BadRequestError, DuplicateError } = require('../../errors');
-const { paginateData, infiniteScrollData } = require('../../utils/paginationUtils'); // Sesuaikan dengan lokasi utilitas Anda
+const { paginate } = require('../../utils/paginationUtils');
 
-const getAllContacts = async (req, queryFields, search, page, size, filter) => {
-	const result = await paginateData(Contact, queryFields, search, page, size, filter);
+const getAllContacts = async (req, queryFields, search, page, size) => {
+	let condition = {};
+	const result = await paginate(Contact, queryFields, search, page, size, filter = condition);
 	const populateOptions = [
 		{
-			path: 'address',
-			select: 'address',
-		},
-	];
-
-	await Contact.populate(result.data, populateOptions);
-	return result;
-};
-
-const getAllContacts2 = async (req, queryFields, search, page, size, filter) => {
-	const result = await infiniteScrollData(Contact, queryFields, search, page, size, filter);
-	const populateOptions = [
-		{
-			path: 'address',
+			path: 'addressId',
 			select: 'address',
 		},
 	];
@@ -31,16 +19,20 @@ const getAllContacts2 = async (req, queryFields, search, page, size, filter) => 
 };
 
 const createContact = async (req) => {
-	const { address, name } = req.body;
-	const checkAddress = await checkingAddress(address)
+	const { name, email, phone } = req.body;
 
-	const check = await Contact.findOne({
-		name,
-		address: checkAddress._id,
-	});
-	if (check) throw new DuplicateError();
-	const result = await Contact.create({ ...req.body });
-	if (!result) throw new BadRequestError();
+	// const check = await Contact.findOne({
+	// 	name, email, phone
+	// });
+	// if (check) throw new DuplicateError(name, email, phone);
+	// console.log('check', check)
+	const addresses = await createAddress(req)
+	const result = await Contact.create({ ...req.body, addressId: addresses.data._id });
+	if (!result) {
+		const address = await checkingAddress(addresses.data._id)
+		await address.deleteOne();
+		throw new BadRequestError('Invalid Address Data.')
+	};
 
 	return { msg: "Contact created successfully", data: result };
 };
@@ -50,31 +42,61 @@ const getOneContact = async (req) => {
 	const result = await Contact.findOne({
 		_id: id,
 	}).populate({
-		path: 'address',
+		path: 'addressId',
 	});
-	if (!result) throw new NotFoundError();
+	if (!result) throw new NotFoundError(id);
 
 	return result;
 };
 
-const updateContact = async (req) => {
-	const { id } = req.params;
-	const { name, address } = req.body;
-	await checkingContact(id)
-	// const checkAddress = await checkingAddress(address)
+// const updateContact = async (req) => {
+// 	const { id } = req.params;
+// 	const { name, email, phone } = req.body;
+// 	const c = await checkingContact(id)
+// 	const a = await checkingAddress(c.addressId)
+// 	console.log('asa', a)
+
+// 	const check = await Contact.findOne({
+// 		name, email, phone,
+// 		addressId: a._id,
+// 		_id: { $ne: id },
+// 	});
+// 	console.log('cek', check)
+// 	if (check) throw new DuplicateError(name, email, phone);
+
+// 	const addresses = await updateAddress(a._id, req.body)
+// 	console.log('adr', addresses)
+// 	const result = await Contact.findOneAndUpdate(
+// 		{ _id: id },
+// 		{
+// 			...req.body,
+// 			addressId: addresses._id
+// 		},
+// 		{ new: true, runValidators: true }
+// 	);
+// 	if (!result) throw new BadRequestError(id);
+
+// 	return { msg: "Updated Data Successfully", data: result };
+// };
+
+const updateContact = async (id, contactData) => {
+	const { name, email, phone } = contactData;
+	const c = await checkingContact(id)
+	const a = await checkingAddress(c.addressId)
 
 	const check = await Contact.findOne({
-		name,
-		// address: checkAddress._id,
+		name, email, phone,
+		addressId: a._id,
 		_id: { $ne: id },
 	});
-	if (check) throw new DuplicateError();
+	if (check) throw new DuplicateError(name, email, phone);
 
+	const addresses = await updateAddress(a._id, contactData)
 	const result = await Contact.findOneAndUpdate(
 		{ _id: id },
 		{
-			...req.body,
-			// address: checkAddress._id
+			...contactData,
+			addressId: addresses._id
 		},
 		{ new: true, runValidators: true }
 	);
@@ -83,10 +105,13 @@ const updateContact = async (req) => {
 	return { msg: "Updated Data Successfully", data: result };
 };
 
-const deleteContact = async (req) => {
-	const { id } = req.params;
+const deleteContact = async (id) => {
+	// const { id } = req.params;
 	const result = await checkingContact(id)
+	const address = await checkingAddress(result.addressId)
+	await address.deleteOne();
 	await result.deleteOne();
+
 	return { msg: 'Deleted Successfully', data: result };
 };
 
@@ -98,7 +123,6 @@ const checkingContact = async (id) => {
 
 module.exports = {
 	getAllContacts,
-	getAllContacts2,
 	createContact,
 	getOneContact,
 	updateContact,

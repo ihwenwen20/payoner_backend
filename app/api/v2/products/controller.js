@@ -14,7 +14,8 @@ const index = async (req, res, next) => {
 		const page = parseInt(req.query.page) || 1;
 		const size = parseInt(req.query.size) || 10;
 		const search = req.query.search_query || "";
-		const queryFields = ['name', 'price', 'featured', 'freeShipping'];
+		const queryFields = ['name', 'price', 'featured', 'freeShipping',
+			'averageRating', 'numOfReviews'];
 
 		const result = await getAllProducts(req, queryFields, search, page, size);
 		res.status(StatusCodes.OK).json(result);
@@ -22,19 +23,15 @@ const index = async (req, res, next) => {
 		next(err);
 	}
 };
-
 const indexInfinite = async (req, res, next) => {
 	try {
 		const page = parseInt(req.query.page) || 1;
 		const size = parseInt(req.query.size) || 10;
 		const search = req.query.search_query || "";
-		const queryFields = ['name', 'price', 'featured', 'freeShipping',
-			'averageRating', 'numOfReviews'];
-
-		// const filter = { company: req.user.company };
-
-		// const result = await getAllProducts2(req, queryFields, search, page, size, filter);
-		const result = await getAllProducts2(req, queryFields, search, page, size);
+		// const queryFields = ['_id', 'name', 'price', 'featured', 'freeShipping',
+		// 	'averageRating', 'numOfReviews'];
+		const queryFields = ['_id'];
+		const result = await getAllProducts(req, queryFields, search, page, size);
 		res.status(StatusCodes.OK).json(result);
 	} catch (err) {
 		next(err);
@@ -76,27 +73,30 @@ const update = async (req, res, next) => {
 
 const destroy = async (req, res, next) => {
 	try {
-		const { msg } = await deleteProduct(req);
+		const { msg, data } = await deleteProduct(req);
 		res.status(StatusCodes.OK).json({
-			msg
+			msg, data
 		});
 	} catch (err) {
 		next(err);
 	}
 };
 
-const uploadImage = async (req, res) => {
-	const result = await Images.create({
-		url: req.file
-			? `images/products/${req.file.filename}`
-			: 'images/products/brosur.png',
-	});
-	res.status(StatusCodes.OK).json({ data: result });
+const uploadImage = async (req, res, next) => {
+	try {
+		const result = await Images.create({
+			url: req.file
+				? `images/products/${req.file.filename}`
+				: 'images/products/brosur.png',
+		});
+		res.status(StatusCodes.OK).json({ msg: "Success! Image Products Uploaded.", data: result });
+	} catch (err) {
+		next(err);
+	}
 };
 
 module.exports = {
-	index,
-	indexInfinite,
+	index, indexInfinite,
 	create,
 	find,
 	update,

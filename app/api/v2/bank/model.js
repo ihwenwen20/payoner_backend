@@ -10,11 +10,16 @@ const bankSchema = new mongoose.Schema({
 		require: [true, 'Bank name is required']
 	},
 	noRekening: {
-		type: String,
-		minlength: [ 10, 'Character length must be between 10 and 20 characters' ],
-		maxLength: [ 20, 'Character length must be between 10 and 20 characters' ],
+		type: Number,
+		minlength: [10, 'Character length must be between 10 and 15 characters'],
+		maxLength: [15, 'Character length must be between 10 and 15 characters'],
 		require: [true, 'Rekening bank number is required'],
 		unique: true,
+	},
+	publisher: {
+		type: mongoose.Types.ObjectId,
+		ref: 'Company',
+		required: true,
 	},
 }, { timestamps: true })
 

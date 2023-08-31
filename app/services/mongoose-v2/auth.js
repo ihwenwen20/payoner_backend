@@ -1,76 +1,170 @@
 const Users = require("../../api/v2/users/model");
-const Companies = require("../../api/v2/companies/model");
-const Contact = require('../../api/v2/contacts/model');
+const Company = require("../../api/v2/companies/model");
+const Contact = require("../../api/v2/contacts/model");
 const UserRefreshToken = require('../../api/v2/userRefreshToken/model');
-const { NotFoundError, BadRequestError, UnauthorizedError } = require("../../errors");
+const { NotFoundError, BadRequestError, UnauthorizedError, DuplicateError } = require("../../errors");
 const {
-	generateToken,
 	createJWT,
 	createRefreshJWT,
+	isTokenValidRefreshToken,
 	attachCookiesToResponse,
 	isTokenValid,
-	isTokenValidRefreshToken,
+	generateToken,
 	validateResetToken,
 	clearResetToken
 } = require("../../utils/jwt");
-const { createTokenUser, } = require("../../utils/createTokenUser");
+const jwt = require('jsonwebtoken');
+const {
+	jwtSecret,
+	jwtExpiration,
+	jwtRefreshTokenExpiration,
+	jwtRefreshTokenSecret,
+} = require('../../config');
+const { createTokenUser, createTokenCompany, } = require("../../utils/createTokenUser");
 const { otpMail } = require('../mail');
 const { createUserRefreshToken } = require("./refreshToken");
-const { checkingImage, createImages } = require('./images');
+const { checkingImage } = require('./images');
+const { createContact } = require('./contact');
+const { createCompany } = require('./companies');
+
+// const signupUser = async (req, res) => {
+// 	const { username, name, email, password, confirmPassword, avatar } = req.body;
+
+// 	if (!username || !name || !email || !password || !confirmPassword) throw new NotFoundError(username, name, email, password, confirmPassword, companyName);
+// 	if (password !== confirmPassword) throw new BadRequestError("Password and Confirm Password do not match");
+
+// 	const check = await Users.findOne({ username, email });
+// 	if (check) throw new DuplicateError(username, email);
+// 	// console.log('check', check)
+// 	const isFirstAccount = (await Users.countDocuments({})) === 0;
+// 	const role = isFirstAccount ? 'Developer' : 'Owner';
+// 	const status = isFirstAccount ? 'Active' : 'Inactive';
+// 	const avatars = await checkingImage(avatar)
+// 	const contacts = await createContact(req)
+// 	// console.log('avatar', avatars)
+// 	// console.log('contact', contacts)
+
+// 	const users = new Users({
+// 		...req.body, role, status,
+// 		avatar: avatars._id,
+// 		// companies: companies.data._id,
+// 		contact: contacts.data._id,
+// 		otp: Math.floor(Math.random() * 999999),
+// 	});
+// 	await users.save();
+// 	if (!users || !users.contact || users.contact.length === 0) {
+// 		console.log("User or user's contact is empty");
+// 		await Contact.findByIdAndDelete(contacts.data._id);
+// 		await users.deleteOne();
+// 		throw new BadRequestError("Invalid Contact Data.");
+// 	};
+// 	// console.log('users data', users)
+// 	// const companies = await createCompany(users._id, req)
+// 	// console.log('company', companies)
+
+// 	delete users._doc._id;
+// 	delete users._doc.password;
+// 	delete users._doc.otp;
+// 	delete users._doc.role;
+// 	delete users._doc.status;
+
+
+// 	let checkMail = await Users.findOne({
+// 		email,
+// 		status: "Inactive",
+// 	});
+// 	// await otpMail(email, checkMail);
+
+// 	// Generate token
+// 	// if (user) {
+// 	// 	generateToken(res, user._id);
+// 	// }
+// 	// const result = createTokenUser(users);
+// 	// console.log('result token', result)
+// 	// attachCookiesToResponse({ res, user: result });
+// 	return {
+// 		msg: 'Register Oke! Please Activated Account with OTP Code from your email.',
+// 		data: users,
+// 		// result
+// 	}
+// };
 
 const signupUser = async (req, res) => {
-	const { avatar, companyName, email, password, confirmPassword, name, phone, } = req.body;
-	if (!name || !companyName || !email || !password || !confirmPassword) {
-		throw new BadRequestError("Please provide all required fields");
-	}
-	if (password !== confirmPassword) throw new BadRequestError("Password and confirm password do not match");
+	const { username, name, email, password, confirmPassword, avatar } = req.body;
 
-	const existingUser = await Users.findOne({ email });
-	if (existingUser) throw new BadRequestError(`User with this email: ${email} already exists`);
+	if (!username || !name || !email || !password || !confirmPassword) throw new NotFoundError(username, name, email, password, confirmPassword, companyName);
+	if (password !== confirmPassword) throw new BadRequestError("Password and Confirm Password do not match");
 
-	try {
-		// first registered Users is an owner
-		const isFirstAccount = (await Users.countDocuments({})) === 0;
-		const role = isFirstAccount ? 'developer' : 'owner';
-		const status = isFirstAccount ? 'active' : 'inactive';
-		// const avatar = await createImages(avatar);
-		await checkingImage(avatar);
-		// const companies = await Companies.create({ companyName, password, owner: user._id });
-		const contact = await Contact.create({ name, email, phone });
-		const user = await Users.create({
-			name, email, password, role, status,
-			// avatar: avatar._id,
-			avatar,
-			// company: companies._id,
-			contact: contact._id,
-			otp: Math.floor(Math.random() * 999999)
-		});
-		delete user._doc.password;
-		delete user._doc.otp;
+	const check = await Users.findOne({ username, email });
+	if (check) throw new DuplicateError(username, email);
+	// console.log('check', check)
+	const isFirstAccount = (await Users.countDocuments({})) === 0;
+	const role = isFirstAccount ? 'Developer' : 'Owner';
+	const status = isFirstAccount ? 'Active' : 'Inactive';
+	const avatars = await checkingImage(avatar)
+	const contacts = await createContact(req)
+	// console.log('avatar', avatars)
+	// console.log('contact', contacts)
 
-		const companies = await Companies.create({ companyName, email, password, owner: user._id });
+	const users = new Users({
+		...req.body, role, status,
+		avatar: avatars._id,
+		contact: contacts.data._id,
+		otp: Math.floor(Math.random() * 999999),
+	});
+	await users.save();
+	if (!users || users.length === 0 || !users.contact || users.contact.length === 0) {
+		console.log("User or user's contact is empty");
+		await Contact.findByIdAndDelete(contacts.data._id);
+		await users.deleteOne();
+		throw new BadRequestError("Invalid Contact Data.");
+	};
+	console.log('users data', users)
+
+	const isFirstCompany = (await Company.countDocuments({})) === 0;
+	const companyRole = isFirstCompany ? 'Company' : 'Admin';
+	const companyStatus = isFirstCompany ? 'Active' : 'Inactive';
+	const company = new Company({
+		...req.body,
+		role: companyRole,
+		status: companyStatus,
+		phone: req.body.companyPhone,
+		address: req.body.companyAddress,
+		owner: users._id,
+	});
+	await company.save();
+	console.log('company', company)
+
+	users.companies.push(company._id);
+	await users.save();
+
+	console.log('users data update', users)
+	// const companies = await createCompany(users._id, req)
+
+	delete users._doc._id;
+	delete users._doc.password;
+	delete users._doc.otp;
+	delete users._doc.role;
+	delete users._doc.status;
 
 
-		let checkMail = await Users.findOne({
-			email,
-			status: "inactive",
-		});
-		// await otpMail(email, checkMail);
+	let checkMail = await Users.findOne({
+		email,
+		status: "Inactive",
+	});
+	// await otpMail(email, checkMail);
 
-		// Generate token
-		// if (user) {
-		// 	generateToken(res, user._id);
-		// }
-		const result = createTokenUser(user);
-		attachCookiesToResponse({ res, user: result });
-		return {
-			msg: 'Register Oke. Please Activated Account with OTP Code from your email!',
-			data: user,
-			result
-		}
-	} catch (err) {
-		console.log(err)
-		throw err
+	// Generate token
+	// if (user) {
+	// 	generateToken(res, user._id);
+	// }
+	// const result = createTokenUser(users);
+	// console.log('result token', result)
+	// attachCookiesToResponse({ res, user: result });
+	return {
+		msg: 'Register Oke! Please Activated Account with OTP Code from your email.',
+		data: users,
+		// result
 	}
 };
 
@@ -81,22 +175,56 @@ const signinUser = async (req, res) => {
 
 		const user = await Users.findOne({
 			email,
-			status: "active",
+			status: "Active",
 		});
+		if (!user) throw new UnauthorizedError("Access Denied!!! Invalid Credentials. Contact the Owner to Activated Your Account");
+		if (!user.name) throw new BadRequestError("User data is incomplete. Please update your profile before generating tokens.");
 
-		if (!user) throw new UnauthorizedError("Invalid Credentials, Please Activated Your Account");
+		const isPassword = await user.comparePassword(password);
+		if (!isPassword) throw new UnauthorizedError("Invalid Credentials. Password does no match!");
 
-		const isPasswordCorrect = await user.comparePassword(password);
-		if (!isPasswordCorrect) throw new UnauthorizedError("Invalid Credentials");
+		const isRefreshToken = await UserRefreshToken.findOne({ user: user._id });
+		if (isRefreshToken) {
+			await isRefreshToken.deleteOne();
+		}
 
-		const accessToken = createJWT({ payload: createTokenUser(user) });
-		const refreshToken = createRefreshJWT({ payload: createTokenUser(user) });
-		await createUserRefreshToken({
+		// const accessToken = createJWT({ payload: createTokenUser(user) });
+		// const refreshToken = createRefreshJWT({ payload: createTokenUser(user) });
+		const accessToken = jwt.sign(
+			{
+				userId: user._id,
+				username: user.username,
+				name: user.name,
+				email: user.email,
+				role: user.role,
+			},
+			jwtSecret,
+			{
+				expiresIn: '1d',
+				// expiresIn: '30m', // Shorter expiration for access token
+			}
+		);
+
+		const refreshToken = jwt.sign(
+			{
+				userId: user._id,
+				username: user.username,
+				name: user.name,
+				email: user.email,
+				role: user.role,
+			},
+			jwtRefreshTokenSecret,
+			{
+				expiresIn: '7d', // Longer expiration for refresh token
+			}
+		);
+		const newRefreshToken = new UserRefreshToken({
 			refreshToken,
 			user: user._id,
 		});
+		await newRefreshToken.save();
 
-		const oneDay = 1000 * 60 * 60 * 24;
+		const oneDay = 1000 * 60 * 60 * 24 * 3;  // 3 hari dlm hitungan milisecond
 		res.cookie('refreshToken', refreshToken, {
 			httpOnly: true,
 			maxAge: new Date(Date.now() + oneDay),
@@ -106,17 +234,268 @@ const signinUser = async (req, res) => {
 		});
 		// req.session.userId = accessToken
 		return {
+			msg: `Greet, Bos. Login Successfully. Welcome ${user.username} :)`,
 			accessToken,
 			refreshToken,
+			userId: user._id,
+			username: user.username,
 			name: user.name,
-			email: user.email,
 			role: user.role,
+			email: user.email,
+			companies: user.companies,
 			avatar: user.avatar,
 		}
 	} catch (err) {
 		throw err
 	}
 };
+
+const signinCompanies = async (req, res) => {
+	try {
+		const { email, password } = req.body;
+		if (!email || !password) throw new BadRequestError("Please provide email and password");
+
+		let user = await Users.findOne({
+			email,
+			status: "Active",
+		});
+
+		console.log("user1:", user);
+		let company = null;
+		if (!user) {
+			company = await Company.findOne({
+				email,
+				status: "Active",
+			});
+			if (!company) {
+				throw new UnauthorizedError("Access Denied!!! Invalid Credentials. Please Confirm Activate Account to Owner");
+			}
+		}
+
+		console.log("user:", user);
+		console.log("company:", company);
+
+		const isPassword = user ? await user.comparePassword(password) : await company.comparePassword(password);;
+		if (!isPassword) throw new UnauthorizedError("Invalid Credentials. Access Denied! Password does no match!");
+		let entity = user || company;
+		let companyId = null; // Initialize companyId as null
+
+		if (entity === company) {
+			companyId = entity._id; // Assign companyId if entity is company
+		} else if (entity === user) {
+			companyId = user.companies; // Use user's companies if entity is user
+			// const userCompanies = user.companies; // Get the user's companies array
+			// const test = await Company.find({
+			// 	_id: { $in: userCompanies }
+			// });
+			// const companyIds = test.map(company => company._id); // Extract _id from each company
+			// companyId = companyIds;
+		}
+
+		// const test = await Company.find({
+		// 	_id: { $in: user.companies }
+		// });
+		// console.log('test', test)
+		console.log("entity:", entity);
+		console.log("companyId:", companyId);
+		const isRefreshToken = await UserRefreshToken.findOne({
+			user: entity._id,
+			company: { $in: companyId },
+		});
+		if (isRefreshToken) {
+			await isRefreshToken.deleteOne();
+		}
+		const accessTokenPayload = {
+			userId: user ? user._id : company.owner, // Use owner's _id if entity is company
+			username: entity.username,
+			ownerName: entity.name,
+			ownerEmail: entity.email,
+			ownerRole: entity.role,
+			// companyId: companyId ? companyId : user.companies,
+			companyId: companyId ? companyId : (user ? user.companies : null),
+			name: entity.companyName || entity.name, // Use companyName if entity is company
+			email: entity.email,
+			role: entity.role,
+			owner: entity.owner,
+		};
+
+		const accessToken = jwt.sign(
+			accessTokenPayload,
+			jwtSecret,
+			{
+				// expiresIn: '15m'
+				expiresIn: '1d', // Shorter expiration for access token
+			}
+		);
+
+		const refreshTokenPayload = {
+			userId: user ? user._id : company.owner,
+			username: entity.username,
+			ownerName: entity.name,
+			ownerEmail: entity.email,
+			ownerRole: entity.role,
+			companyId: companyId ? companyId : (user ? user.companies : null),
+			name: entity.companyName || entity.name,
+			email: entity.email,
+			role: entity.role,
+			owner: entity.owner,
+		};
+
+		const refreshToken = jwt.sign(
+			refreshTokenPayload,
+			jwtRefreshTokenSecret,
+			{
+				expiresIn: '7d', // Longer expiration for refresh token
+			}
+		);
+
+		const newRefreshToken = new UserRefreshToken({
+			refreshToken,
+			// user: user ? user._id : null,
+			user: user ? user._id : entity.owner,
+			company: companyId ? companyId : user.companies,
+		});
+		await newRefreshToken.save();
+
+		const oneDay = 1000 * 60 * 60 * 24 * 3;  // 3 hari dlm hitungan milisecond
+		res.cookie('refreshToken', refreshToken, {
+			httpOnly: true,
+			maxAge: new Date(Date.now() + oneDay),
+			secure: process.env.MODE !== 'development', // Use secure cookies in production
+			sameSite: 'strict', // Prevent CSRF attacks
+			signed: true,
+		});
+		// req.session.userId = accessToken
+		return {
+			msg: `Good Job, Bos. Login Successfully. Welcome ${entity.companyName || entity.name} :)`,
+			accessToken,
+			refreshToken,
+			companyId: companyId ? companyId : (user ? user.companies : null),
+			entityName: entity.companyName || entity.name,
+			entityEmail: entity.email,
+			entityRole: entity.role,
+			entityOwner: entity.owner,
+			entityLogo: entity.logo,
+			userId: user ? user._id : null,
+			username: entity.username,
+			userName: user ? user.name : null,
+			userRole: user ? user.role : null,
+			userEmail: user ? user.email : null,
+			userCompanies: user ? user.companies : entity.owner,
+			userAvatar: user ? user.avatar : null,
+		}
+	} catch (err) {
+		throw err
+	}
+};
+
+// const signinCompanies = async (req, res) => {
+// 	try {
+// 		const { email, password } = req.body;
+// 		if (!email || !password) throw new BadRequestError("Please provide email and password");
+
+// 		const user = await Users.findOne({
+// 			// email,
+// 			status: "Active",
+// 		});
+// 		if (!user) throw new UnauthorizedError("Access Denied!!! Invalid Credentials. Contact the Owner to Activated Your Account");
+// 		console.log('user', user)
+// 		const company = await Companies.findOne({
+// 			email,
+// 			status: "Active",
+// 			owner: user._id
+// 		});
+// 		console.log('login cek company', company)
+// 		if (!company) throw new UnauthorizedError("Invalid Credentials, Please Confirm Activate Account to your Owner");
+
+// 		const isPassword = await company.comparePassword(password);
+// 		if (!isPassword) throw new UnauthorizedError("Invalid Credentials. Access Denied!");
+
+// 		const isRefreshToken = await UserRefreshToken.findOne({
+// 			user: user._id,
+// 			company: company._id,
+// 		});
+// 		if (isRefreshToken) {
+// 			await isRefreshToken.deleteOne();
+// 		}
+
+// 		// const accessToken = createJWT({ payload: createTokenUser(user) });
+// 		// const refreshToken = createRefreshJWT({ payload: createTokenUser(user) });
+// 		const accessToken = jwt.sign(
+// 			{
+// 				userId: user._id,
+// 				username: user.username,
+// 				ownerName: user.name,
+// 				ownerEmail: user.email,
+// 				ownerRole: user.role,
+// 				companyId: company._id,
+// 				name: company.companyName,
+// 				email: company.email,
+// 				role: company.role,
+// 				owner: company.owner,
+// 			},
+// 			jwtSecret,
+// 			{
+// 				expiresIn: '15m', // Shorter expiration for access token
+// 			}
+// 		);
+
+// 		const refreshToken = jwt.sign(
+// 			{
+// 				userId: user._id,
+// 				username: user.username,
+// 				ownerName: user.name,
+// 				ownerEmail: user.email,
+// 				ownerRole: user.role,
+// 				companyId: company._id,
+// 				name: company.companyName,
+// 				email: company.email,
+// 				role: company.role,
+// 				owner: company.owner,
+// 			},
+// 			jwtRefreshTokenSecret,
+// 			{
+// 				expiresIn: '7d', // Longer expiration for refresh token
+// 			}
+// 		);
+// 		const newRefreshToken = new UserRefreshToken({
+// 			refreshToken,
+// 			user: user._id,
+// 			company: company._id,
+// 		});
+// 		await newRefreshToken.save();
+
+// 		const oneDay = 1000 * 60 * 60 * 24 * 3;  // 3 hari dlm hitungan milisecond
+// 		res.cookie('refreshToken', refreshToken, {
+// 			httpOnly: true,
+// 			maxAge: new Date(Date.now() + oneDay),
+// 			secure: process.env.MODE !== 'development', // Use secure cookies in production
+// 			sameSite: 'strict', // Prevent CSRF attacks
+// 			signed: true,
+// 		});
+// 		// req.session.userId = accessToken
+// 		return {
+// 			msg: `Good Job, Bos. Login Successfully. Welcome ${company.companyName} :)`,
+// 			accessToken,
+// 			refreshToken,
+// 			companyId: company._id,
+// 			name: company.companyName,
+// 			email: company.email,
+// 			role: company.role,
+// 			owner: company.owner,
+// 			logo: company.logo,
+// 			userId: user._id,
+// 			username: user.username,
+// 			name: user.name,
+// 			role: user.role,
+// 			email: user.email,
+// 			companies: user.companies,
+// 			avatar: user.avatar,
+// 		}
+// 	} catch (err) {
+// 		throw err
+// 	}
+// };
 
 const activateUser = async (req) => {
 	const { otp, email } = req.body;
@@ -131,7 +510,7 @@ const activateUser = async (req) => {
 	const users = await Users.findByIdAndUpdate(
 		check._id,
 		{
-			status: "active",
+			status: "Active",
 		},
 		{ new: true }
 	);
@@ -139,8 +518,11 @@ const activateUser = async (req) => {
 	// attachCookiesToResponse({ res, users: token });
 	// res.status(StatusCodes.CREATED).json({ users: token });
 
+	delete users._doc._id;
 	delete users._doc.password;
 	delete users._doc.otp;
+	delete users._doc.role;
+	delete users._doc.status;
 
 	return users;
 	// return { token, users };
@@ -215,7 +597,7 @@ const resetPassword = async (req, res) => {
 	if (!newPassword || !confirmPassword) {
 		throw new BadRequestError("Please provide all fields");
 	}
-	if (newPassword !== confirmPassword) throw new BadRequestError("Password and confirm password do not match");
+	if (newPassword !== confirmPassword) throw new BadRequestError("Password and Confirm Password do not match");
 
 	const payload = isTokenValidRefreshToken({ token: refreshToken });
 	// console.log('payload', payload)
@@ -241,7 +623,7 @@ const changePassword = async (req, res) => {
 	if (!oldPassword || !newPassword || !confirmPassword) {
 		throw new BadRequestError("Please provide all fields");
 	}
-	if (newPassword !== confirmPassword) throw new BadRequestError("Password and confirm password do not match");
+	if (newPassword !== confirmPassword) throw new BadRequestError("Password and Confirm Password do not match");
 
 	const resetTokenFromDB = await UserRefreshToken.findOne().populate({
 		path: 'user',
@@ -251,7 +633,7 @@ const changePassword = async (req, res) => {
 
 	// const payload = isTokenValidRefreshToken({ token: resetTokenFromDB.refreshToken });
 	// const userCheck = await Users.findOne({ email: payload.email });
-	const userCheck = await Users.findOne({  _id: req.user.userId  });
+	const userCheck = await Users.findOne({ _id: req.user.userId });
 	// console.log('payload', userCheck)
 	const isPasswordCorrect = await userCheck.comparePassword(oldPassword);
 	if (!isPasswordCorrect) {
@@ -266,17 +648,17 @@ const changePassword = async (req, res) => {
 };
 
 const sendVerificationEmail = async (email, verificationToken) => {
-  // Buat tautan verifikasi yang mengarahkan ke endpoint verifikasi di aplikasi Anda
-  const verificationLink = `https://yourapp.com/verify?token=${verificationToken}`;
+	// Buat tautan verifikasi yang mengarahkan ke endpoint verifikasi di aplikasi Anda
+	const verificationLink = `https://yourapp.com/verify?token=${verificationToken}`;
 
-  // Kirim email verifikasi ke pengguna
-  const mailOptions = {
-    to: email,
-    subject: 'Email Verification',
-    text: `Click the following link to verify your email: ${verificationLink}`,
-  };
+	// Kirim email verifikasi ke pengguna
+	const mailOptions = {
+		to: email,
+		subject: 'Email Verification',
+		text: `Click the following link to verify your email: ${verificationLink}`,
+	};
 
-  await sendEmailFunction(mailOptions); // Ganti dengan kode pengiriman email Anda
+	await sendEmailFunction(mailOptions); // Ganti dengan kode pengiriman email Anda
 };
 
 // const signupUser = async (req, res) => {
@@ -295,25 +677,25 @@ const sendVerificationEmail = async (email, verificationToken) => {
 // };
 
 const sendPasswordResetEmail = async (email, resetToken) => {
-  // Buat tautan pemulihan kata sandi yang mengarahkan ke endpoint pemulihan kata sandi di aplikasi Anda
-  const resetLink = `https://yourapp.com/reset-password?token=${resetToken}`;
+	// Buat tautan pemulihan kata sandi yang mengarahkan ke endpoint pemulihan kata sandi di aplikasi Anda
+	const resetLink = `https://yourapp.com/reset-password?token=${resetToken}`;
 
-  // Kirim email pemulihan kata sandi ke pengguna
-  const mailOptions = {
-    to: email,
-    subject: 'Password Reset',
-    text: `Click the following link to reset your password: ${resetLink}`,
-  };
+	// Kirim email pemulihan kata sandi ke pengguna
+	const mailOptions = {
+		to: email,
+		subject: 'Password Reset',
+		text: `Click the following link to reset your password: ${resetLink}`,
+	};
 
-  await sendEmailFunction(mailOptions); // Ganti dengan kode pengiriman email Anda
+	await sendEmailFunction(mailOptions); // Ganti dengan kode pengiriman email Anda
 };
-
-
 
 
 module.exports = {
 	signupUser,
+	// signupUserWithCompanies,
 	signinUser,
+	signinCompanies,
 	activateUser,
 	getRefreshToken,
 	logoutUser,

@@ -16,10 +16,10 @@ const app = express();
 // // import router
 const addressRouter = require('./app/api/v2/address/router');
 const contactRouter = require('./app/api/v2/contacts/router');
-// const coveragesRouter = require('./app/api/v2/coverage/router');
+const coveragesRouter = require('./app/api/v2/coverage/router');
 // const odcRouter = require('./app/api/v2/mikrotik/odc/router');
 // const odpRouter = require('./app/api/v2/mikrotik/odp/router');
-// const banksRouter = require('./app/api/v2/bank/router');
+const banksRouter = require('./app/api/v2/bank/router');
 // const userRefreshTokenRouter = require('./app/api/v2/userRefreshToken/router');
 const companiesRouter = require('./app/api/v2/companies/router');
 const authCMSRouter = require('./app/api/v2/auth/router');
@@ -31,6 +31,8 @@ const productRouter = require('./app/api/v2/products/router');
 const reviewRouter = require('./app/api/v2/reviews/router');
 const orderRouter = require('./app/api/v2/orders/router');
 const customerRouter = require('./app/api/v2/customers/router');
+const paymentRouter = require('./app/api/v2/payments/router');
+const incomeRouter = require('./app/api/v2/accounting/income/router');
 
 // middleware
 const notFoundMiddleware = require('./app/middlewares/not-found');
@@ -47,7 +49,7 @@ const handleErrorMiddleware = require('./app/middlewares/handler-error');
 // }));
 app.use(cors({ credentials: true, origin: 'http://localhost:3000' }));
 // app.use(cors());
-app.use(logger('dev'));
+app.use(logger('development'));
 app.use(cookieParser(process.env.JWT_SECRET));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -78,12 +80,12 @@ const v1 = '/api/users'
 // use router
 app.use(addressRouter);
 app.use(contactRouter);
-// app.use(coveragesRouter);
+app.use(coveragesRouter);
 // app.use(odcRouter);
 // app.use(odpRouter);
 app.use(`${v1}`, authCMSRouter);
 app.use(usersRouter);
-// app.use(companiesRouter);
+app.use(companiesRouter);
 app.use(categoriesRouter);
 app.use(categoriesSubRouter);
 app.use(imagesRouter);
@@ -91,7 +93,9 @@ app.use(productRouter);
 app.use(reviewRouter);
 app.use(orderRouter);
 app.use(customerRouter);
-// app.use(banksRouter);
+app.use(banksRouter);
+app.use(paymentRouter);
+app.use(incomeRouter);
 // app.use(`${v1}`, userRefreshTokenRouter);
 
 // use middleware

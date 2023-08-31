@@ -1,10 +1,10 @@
 const {
 	getAllCompanies,
-	getAllCompanies2,
 	createCompany,
 	getOneCompany,
 	updateCompany,
 	deleteCompany,
+	changeStatusCompany,
 } = require('../../../services/mongoose-v2/companies');
 const { StatusCodes } = require('http-status-codes');
 
@@ -13,7 +13,7 @@ const index = async (req, res, next) => {
 		const page = parseInt(req.query.page) || 1;
 		const size = parseInt(req.query.size) || 10;
 		const search = req.query.search_query || "";
-		const queryFields = ['name'];
+		const queryFields = ['companyName', '_id'];
 
 		const result = await getAllCompanies(req, queryFields, search, page, size);
 		res.status(StatusCodes.OK).json(result);
@@ -22,24 +22,8 @@ const index = async (req, res, next) => {
 	}
 };
 
-const indexInfinite = async (req, res, next) => {
-	try {
-		const page = parseInt(req.query.page) || 1;
-		const size = parseInt(req.query.size) || 10;
-		const search = req.query.search_query || "";
-		const queryFields = ['name'];
-
-		// const filter = { company: req.user.company };
-
-		// const result = await getAllCompanies2(req, queryFields, search, page, size, filter);
-		const result = await getAllCompanies2(req, queryFields, search, page, size);
-		res.status(StatusCodes.OK).json(result);
-	} catch (err) {
-		next(err);
-	}
-};
-
 const create = async (req, res, next) => {
+	console.log('token company controller', req.user)
 	try {
 		const { msg, data } = await createCompany(req);
 		res.status(StatusCodes.CREATED).json({
@@ -62,8 +46,9 @@ const find = async (req, res, next) => {
 };
 
 const update = async (req, res, next) => {
+	const { id } = req.params;
 	try {
-		const { msg, data } = await updateCompany(req);
+		const { msg, data } = await updateCompany(req, id, req.body);
 		return res.status(StatusCodes.OK).json({
 			msg, data,
 		});
@@ -71,12 +56,34 @@ const update = async (req, res, next) => {
 		next(err);
 	}
 };
+// const update = async (req, res, next) => {
+// 	try {
+// 		const { msg, data } = await updateCompany(req);
+// 		return res.status(StatusCodes.OK).json({
+// 			msg, data,
+// 		});
+// 	} catch (err) {
+// 		next(err);
+// 	}
+// };
 
 const destroy = async (req, res, next) => {
+	const { id } = req.params;
 	try {
-		const { msg } = await deleteCompany(req);
+		const { msg, data } = await deleteCompany(id, req);
 		res.status(StatusCodes.OK).json({
-			msg
+			msg, data
+		});
+	} catch (err) {
+		next(err);
+	}
+};
+
+const changeStatus = async (req, res, next) => {
+	try {
+		const { msg, data } = await changeStatusCompany(req);
+		res.status(StatusCodes.OK).json({
+			msg, data
 		});
 	} catch (err) {
 		next(err);
@@ -85,9 +92,9 @@ const destroy = async (req, res, next) => {
 
 module.exports = {
 	index,
-	indexInfinite,
 	create,
 	find,
 	update,
 	destroy,
+	changeStatus
 };

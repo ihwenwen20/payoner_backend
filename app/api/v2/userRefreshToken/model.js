@@ -10,8 +10,12 @@ const userRefreshTokenSchema = new mongoose.Schema(
 			ref: 'User',
 			required: true,
 		},
+		company: [{
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'Company',
+		}],
 	},
-	{timestamps: true}
+	{ timestamps: true }
 );
 
 module.exports = mongoose.model('UserRefreshToken', userRefreshTokenSchema);

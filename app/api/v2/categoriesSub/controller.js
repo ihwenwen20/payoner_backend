@@ -1,6 +1,5 @@
 const {
 	getAllSubCategories,
-	getAllSubCategories2,
 	createSubCategory,
 	getOneSubCategory,
 	updateSubCategory,
@@ -16,23 +15,6 @@ const index = async (req, res, next) => {
 		const queryFields = ['name'];
 
 		const result = await getAllSubCategories(req, queryFields, search, page, size);
-		res.status(StatusCodes.OK).json(result);
-	} catch (err) {
-		next(err);
-	}
-};
-
-const indexInfinite = async (req, res, next) => {
-	try {
-		const page = parseInt(req.query.page) || 1;
-		const size = parseInt(req.query.size) || 10;
-		const search = req.query.search_query || "";
-		const queryFields = ['name'];
-
-		// const filter = { company: req.user.company };
-
-		// const result = await getAllSubCategories2(req, queryFields, search, page, size, filter);
-		const result = await getAllSubCategories2(req, queryFields, search, page, size);
 		res.status(StatusCodes.OK).json(result);
 	} catch (err) {
 		next(err);
@@ -74,9 +56,9 @@ const update = async (req, res, next) => {
 
 const destroy = async (req, res, next) => {
 	try {
-		const { msg } = await deleteSubCategory(req);
+		const { msg, data } = await deleteSubCategory(req);
 		res.status(StatusCodes.OK).json({
-			msg
+			msg, data
 		});
 	} catch (err) {
 		next(err);
@@ -85,7 +67,6 @@ const destroy = async (req, res, next) => {
 
 module.exports = {
 	index,
-	indexInfinite,
 	create,
 	find,
 	update,

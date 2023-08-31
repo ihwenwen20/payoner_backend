@@ -1,24 +1,24 @@
 const express = require('express');
 const router = express();
-
-const { create, index, indexInfinite, find, update, destroy } = require('./controller');
+const { create, index, find, update, destroy, changeStatus } = require('./controller');
 
 const {
-	authenticateUser,
-	authorizeRoles,
+	authenticateCompany,
+	authorizeRolesCompany,
+	authenticateCustomer,
 } = require('../../../middlewares/auth');
 
-// router.get('/categories', authenticateUser, authorizeRoles('company'), index);
-// router.post('/categories', authenticateUser, authorizeRoles('company'), create);
-// router.get('/categories/:id', authenticateUser, authorizeRoles('company'), find);
-// router.put('/categories/:id', authenticateUser, authorizeRoles('company'), update);
-// router.delete('/categories/:id', authenticateUser, authorizeRoles('company'), destroy);
+router.get('/customers', authenticateCompany, authorizeRolesCompany('Developer', 'Owner', 'Company', 'Admin'), index);
+// router.post('/customers', authenticateCompany, authorizeRolesCompany('Developer', 'Owner', 'Company', 'Admin'), create);
+// router.get('/customers/:id', authenticateCompany, authorizeRolesCompany('Developer', 'Owner', 'Company', 'Admin'), find);
+// router.put('/customers/:id', authenticateCompany, authorizeRolesCompany('Developer', 'Owner', 'Company', 'Admin'), update);
+router.delete('/customers/:id', authenticateCompany, authorizeRolesCompany('Developer', 'Owner', 'Company', 'Admin'), destroy);
+router.put('/customers/:id/status', authenticateCompany, authorizeRolesCompany('Developer', 'Owner', 'Company', 'Admin'), changeStatus);
 
-router.get('/customers', index);
-router.get('/customers/infinite', indexInfinite);
+// router.get('/customers', index);
 router.post('/customers', create);
 router.get('/customers/:id', find);
 router.put('/customers/:id', update);
-router.delete('/customers/:id', destroy);
+// router.delete('/customers/:id', destroy);
 
 module.exports = router;

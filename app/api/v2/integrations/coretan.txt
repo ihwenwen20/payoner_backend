@@ -1,0 +1,105 @@
+// Model abstrak untuk integrasi payment gateway
+const PaymentGatewayModel = mongoose.model('PaymentGateway', {
+  name: { type: String, required: true },
+  description: { type: String, required: true },
+  endpoint: { type: String, required: true },
+  secret: { type: String, required: true },
+});
+
+
+name: Nama payment gateway.
+description: Deskripsi payment gateway.
+endpoint: URL endpoint payment gateway.
+secret: Kunci rahasia payment gateway.
+
+
+// Model konkret untuk integrasi payment gateway Midtrans
+const MidtransModel = mongoose.model('Midtrans', {
+  ...PaymentGatewayModel,
+  clientId: { type: String, required: true },
+  clientSecret: { type: String, required: true },
+  merchantId: { type: String, required: true },
+});
+
+// Model untuk produk
+const ProductModel = mongoose.model('Product', {
+  name: { type: String, required: true },
+  price: { type: Number, required: true },
+  description: { type: String, required: true },
+});
+
+// Model untuk keranjang belanja
+const CartModel = mongoose.model('Cart', {
+  userId: { type: String, required: true },
+  products: { type: Array, of: { type: mongoose.Types.ObjectId, ref: 'Product' } },
+  totalPrice: { type: Number, required: true },
+});
+
+// Model untuk pesanan
+const OrderModel = mongoose.model('Order', {
+  userId: { type: String, required: true },
+  cartId: { type: mongoose.Types.ObjectId, ref: 'Cart' },
+  paymentGateway: { type: mongoose.Types.ObjectId, ref: 'PaymentGateway' },
+  status: { type: String, required: true },
+  createdAt: { type: Date, required: true },
+  updatedAt: { type: Date, required: true },
+});
+
+// Model untuk invoice
+const InvoiceModel = mongoose.model('Invoice', {
+  orderId: { type: mongoose.Types.ObjectId, ref: 'Order' },
+  paymentId: { type: String, required: true },
+  amount: { type: Number, required: true },
+  createdAt: { type: Date, required: true },
+  updatedAt: { type: Date, required: true },
+});
+
+// Model untuk history transaksi
+const TransactionHistoryModel = mongoose.model('TransactionHistory', {
+  type: { type: String, required: true },
+  amount: { type: Number, required: true },
+  createdAt: { type: Date, required: true },
+  updatedAt: { type: Date, required: true },
+});
+
+// Contoh pemanggilan untuk Midtrans
+app.post('/midtrans-payment', async (req, res) => {
+  const midtransConfig = {
+    serverKey: 'your-dynamic-server-key',
+    clientKey: 'your-dynamic-client-key',
+  };
+
+  const snapToken = await midtransModel.initiateMidtransPayment(
+    'order123',
+    100000,
+    {
+      first_name: 'John',
+      last_name: 'Doe',
+      email: 'john@example.com',
+    },
+    midtransConfig
+  );
+
+  res.json({ snapToken });
+});
+
+// Contoh pemanggilan untuk TriPay
+app.post('/tripay-payment', async (req, res) => {
+  const tripayConfig = {
+    apiKey: 'your-dynamic-api-key',
+    baseUrl: 'https://api.tripay.co.id/v2',
+  };
+
+  const invoiceUrl = await tripayModel.initiateTriPayPayment(
+    'order456',
+    150000,
+    {
+      first_name: 'Jane',
+      last_name: 'Doe',
+      email: 'jane@example.com',
+    },
+    tripayConfig
+  );
+
+  res.json({ invoiceUrl });
+});

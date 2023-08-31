@@ -5,10 +5,13 @@ const {
 	getSingleOrder,
 	updateOrder,
 	deleteOrder,
+	accountingBalance,
+	changeStatusOrder
 } = require('../../../services/mongoose-v2/order');
 const Order = require('./model');
 const { StatusCodes } = require('http-status-codes');
 // const { checkPermissions } = require('../utils');
+const Orders= require('./model')
 
 const create = async (req, res, next) => {
 	try {
@@ -81,13 +84,52 @@ const update = async (req, res, next) => {
 
 const destroy = async (req, res, next) => {
 	try {
-		const { msg } = await deleteOrder(req);
+		const { msg, data } = await deleteOrder(req);
 		res.status(StatusCodes.OK).json({
-			msg
+			msg, data
 		});
 	} catch (err) {
 		next(err);
 	}
+};
+
+const balance = async (req, res, next) => {
+	try {
+		const { msg, data } = await accountingBalance(req);
+		res.status(StatusCodes.OK).json({
+			msg, data
+		});
+	} catch (err) {
+		next(err);
+	}
+};
+
+const changeStatus = async (req, res, next) => {
+	try {
+		const { msg, data } = await changeStatusOrder(req);
+		res.status(StatusCodes.OK).json({
+			msg, data
+		});
+	} catch (err) {
+		next(err);
+	}
+};
+
+const getOrdersById = (req, res, next, id) => {
+  Orders.findById(id).exec((error, cate) => {
+    if (error || !cate) {
+      return res.status(400).json({
+        error: "No Category found in the DB",
+      });
+    }
+
+    req.orders = cate;
+    next();
+  });
+};
+
+const getOrder = (req, res) => {
+  return res.json(req.orders);
 };
 
 module.exports = {
@@ -98,4 +140,6 @@ module.exports = {
 	update,
 	destroy,
 	getCurrentUserOrders,
+	balance,
+	changeStatus,getOrdersById,getOrder
 };

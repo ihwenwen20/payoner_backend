@@ -2,23 +2,23 @@ const mongoose = require('mongoose');
 
 const PaymentSchema = new mongoose.Schema(
 	{
-		type: {
+		method: {
 			type: String,
+			enum: ['Cash', 'Transfer', 'Payment Gateway'],
 			required: true,
-			minlength: 3,
-			maxlength: 50,
 		},
 		status: {
 			type: String,
-			enum: ['Paid', 'Unpaid', 'Confirmed', 'Pending'],
-			default: 'Paid'
+			// enum: ['Paid', 'Unpaid', 'Confirmed', 'Pending'],
+			enum: ['Active', 'Inactive'],
+			default: 'Inactive'
 		},
 		image: {
 			type: mongoose.Types.ObjectId,
 			ref: 'Image',
 			required: true,
 		},
-		banks: [{
+		bankId: [{
 			type: mongoose.Schema.Types.ObjectId,
 			ref: 'Bank'
 		}],

@@ -3,44 +3,35 @@ const argon2 = require('argon2');
 
 const customerSchema = new mongoose.Schema(
 	{
+		avatar: {
+			type: mongoose.Types.ObjectId,
+			ref: 'Image',
+			required: true
+		},
 		username: {
 			type: String,
+			trim: true,
 			unique: [true, "UserName Already Exist"],
 			minlength: 2,
 		},
 		name: {
 			type: String,
-			required: [true, 'Name is required'],
+			trim: true,
+			required: [true, 'Please provide name'],
 			minlength: 3,
 			maxlength: 50,
 		},
 		email: {
 			type: String,
+			trim: true,
 			unique: true,
-			required: [true, 'Email is required'],
+			required: [true, 'Please provide email'],
 		},
 		password: {
 			type: String,
+			trim: true,
 			required: [true, 'Password is required'],
 			minlength: 6,
-		},
-		role: {
-			type: String,
-			default: 'Client',
-		},
-		status: {
-			type: String,
-			enum: ['active', 'inactive', 'pending', 'suspend'],
-			default: 'inactive',
-		},
-		otp: {
-			type: String,
-			required: true,
-		},
-		avatar: {
-			type: mongoose.Types.ObjectId,
-			ref: 'Image',
-			required: true
 		},
 		gender: {
 			type: String,
@@ -52,6 +43,29 @@ const customerSchema = new mongoose.Schema(
 		contact: {
 			type: mongoose.Types.ObjectId,
 			ref: 'Contact',
+		},
+		role: {
+			type: String,
+			default: 'Client',
+			required: true
+		},
+		status: {
+			type: String,
+			enum: ['Active', 'Inactive', 'Pending', 'Suspend', 'Free'],
+			default: 'Inactive',
+			required: true
+		},
+		otp: {
+			type: String,
+			required: true,
+		},
+		company: {
+			type: mongoose.Types.ObjectId,
+			ref: 'Company',
+		},
+		purchases: {
+			type: Array,
+			default: [],
 		},
 	},
 	{ timestamps: true }

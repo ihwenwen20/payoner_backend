@@ -3,25 +3,27 @@ const mongoose = require('mongoose');
 const contactSchema = new mongoose.Schema({
 	name: {
 		type: String,
-		required: true,
+		// required: true,
 	},
 	email: {
 		type: String,
-		required: true,
+		// required: true,
 	},
 	phone: {
-		type: String,
-		unique: true,
+		type: Number,
+		// unique: true,
+		required: true,
 	},
 	blockir: {
 		type: Boolean,
 		default: false,
 		required: true
 	},
-	address: {
+	addressId: [{
 		type: mongoose.Schema.Types.ObjectId,
 		ref: 'Address',
-	},
+		required: true
+	}],
 });
 
 module.exports = mongoose.model('Contact', contactSchema);
